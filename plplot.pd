@@ -84,9 +84,9 @@ sub create_low_level {
     # @vars.  Matching types are in @types.  The name of the function is in
     # $func_name and the perl name to call it is in $pfunc_name.
 
-    my $pars = '';
-    my $code = "$func_name( ";
-    my $otherpars = '';
+    my @pars      = ();
+    my @code      = (); 
+    my @otherpars = ();
     my $output = ($pfunc_name =~ /^plg/); # flag: 1 = output routine.
     for (my $i=0;$i<@vars;$i++) {
 
@@ -101,35 +101,50 @@ sub create_low_level {
       elsif ($dim == 2) { $dimstr = '(dima,dimb)'; } 
 
       if ($type =~ /PLFLT/) {
-        $pars .= " double $var$dimstr; " # double input variable
+        push (@pars, "double $var$dimstr"); # double input variable
       } elsif ($type =~ /PLINT/) {
-        $pars .= "int $var$dimstr; "    # integer input variable
+        push (@pars, "int $var$dimstr");    # integer input variable
       } elsif ($type =~ /char\s*\*/) {  # char * input or output
-	$otherpars .= "char *$vars[$i]; ";
+	push (@otherpars, "char *$vars[$i]");
       } else { 
         die "unsupported type: $type"; 
       }
 
       # Determine Code section
       if      ($type =~ /char\s*\*/) { # char * input or output
-        $code .= "\$COMP($vars[$i]),";
+        push (@code, "\$COMP($vars[$i])");
       } elsif ($dim == 0) { # pass by value
-        $code .= "\$$vars[$i](),";
+        push (@code, "\$$vars[$i]()");
       } else {
-        $code .= "\$P($vars[$i]),";
+        push (@code, "\$P($vars[$i])");
       }
 
     }
-    
-    chop($code);
-    $code .= ');';
 
-    if ($pars eq '' and $otherpars eq '') {
-      my $xsout = "void\n$pfunc_name()\nCODE:\n\t$func_name();\n";
+    # if there are no PDL parameters, some compilers cannot handle the
+    # pp_def ('foo', Pars => '') type definition.
+    # For these cases, we use plain XS.    
+    if (@pars == 0) {
+      my $pars = join (',', @vars);
+      my $decl = '';
+      for (my $i=0;$i<@vars;$i++) {
+        $decl .= "\n\t$types[$i]\t$vars[$i]";
+      }
+      my $xsout = <<"EOC";
+void
+$pfunc_name($pars)$decl
+CODE:
+	$func_name($pars);
+EOC
       print "$xsout" if ($debug);	
       pp_addxs ('', $xsout);     
       pp_add_exported('', $pfunc_name);
+
     } else {                                                                       
+
+      my $pars      = join (';', @pars);
+      my $otherpars = join (';', @otherpars);
+      my $code      = "$func_name(" . join (',', @code) . ");";
 
       # do the definition
       print "pp_def (\'$pfunc_name\', 

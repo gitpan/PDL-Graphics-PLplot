@@ -51,6 +51,9 @@ Important:  plplot *must* be compiled --with-double so that all floating
 # ./configure --with-double
 # make
 # make install
+
+On some systems (IRIX, for one) it may be necessary to compile plplot
+without fortran support:  --disable-f77.
 ------------------------------------------------------------------------
 
 INSTALLATION:
