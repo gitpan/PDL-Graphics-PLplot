@@ -1,0 +1,5 @@
+For a light weight object oriented interface from perl/PDL to the PLPLOT plotting library.
+
+Copyright (c) 2002 Douglas Hunt. All rights reserved. This program is free software;
+you can redistribute it and/or modify it under the same terms as Perl itself. 
+

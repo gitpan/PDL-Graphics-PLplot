@@ -1,0 +1,349 @@
+use Config;
+
+# Necessary includes for .xs file
+pp_addhdr(<<'EOH');
+#include <plplot.h>
+#include <plplotP.h>
+#include <stdio.h>
+EOH
+
+# Read in a modified plplot.h file.  Define
+# a low-level perl interface to PLplot from these definitions.
+# This could be cleaner!!
+#
+# A sample output for one PLplot function:
+#
+# Input:
+#
+# void c_plenv(PLFLT xmin, PLFLT xmax, PLFLT ymin, PLFLT ymax, PLINT just, PLINT axis);
+#
+# Output:
+#
+# pp_def ('plenv',
+#	  Pars => 'xmin(); xmax(); ymin(); ymax(); int just(); int axis();',
+#	  GenericTypes => [D],
+#	  Code => 'c_plenv($xmin(),$xmax(),$ymin(),$ymax(),$just(),$axis());', 
+#
+# In 'get' routines, (prefix = plg) all parameters have [o] added before, ie:
+# 
+# void c_plglevel(PLINT *p_level);
+# 
+# leads to:
+# pp_def ('plglevel',
+#	  Pars => 'int [o]p_level;',
+#	  GenericTypes => [D],
+#	  Code => 'c_plglevel($P(p_level));', 
+#
+sub create_low_level {
+
+# return; # use to short circuit creation of rest of interface for testing new additions.
+
+# The input lines below are cut from plplot.h, but:
+# -- Only needed functions are included (none of the C/C++ only stuff)
+# -- all C function declarations are put onto one line for ease of parsing
+
+  my $defn = shift;
+  my @lines = split (/\n/, $defn);
+
+  my $debug = 0; # print out pp_defs
+
+  foreach (@lines) {
+
+    next if (/^\#/);  # Skip commented out lines
+    next if (/^\s*$/); # Skip blank lines
+
+    print "$_\n" if ($debug);
+
+    my ($return_type, $func_name, $parms) = /^(\w+\**)\s+(\w+)\((.+)\)\;/;
+    (my $pfunc_name = $func_name) =~ s/c_//; # get rid of c_ in perl func names
+    my @parms = split (/,/, $parms);
+
+    my @vars  = ();
+    my @types = ();
+    my %output = ();
+    foreach $parm (@parms) {
+
+      my ($varname) = ($parm =~ /(\w+)$/);
+      $parm =~ s/$varname//; # parm now contains the full C type
+      $varname =~ s/0/zero/;
+      $varname =~ s/1/one/;
+      $varname =~ s/2/two/; 
+      $varname =~ s/3/three/; # PP doe not like variable names containing numbers
+      $parm =~ s/const //;    # get rid of 'const' in C type
+      $parm =~ s/^\s+//;
+      $parm =~ s/\s+$//;      # get rid of white space from 'parm'
+      
+      next if ($varname eq 'void');
+      push (@vars, $varname);
+      push (@types, $parm);
+
+    }
+
+    # Now we have enough info to write out the dd_def.  All variables names are in
+    # @vars.  Matching types are in @types.  The name of the function is in
+    # $func_name and the perl name to call it is in $pfunc_name.
+
+    my $pars = '';
+    my $code = "$func_name( ";
+    my $otherpars = '';
+    my $output = ($pfunc_name =~ /^plg/); # flag: 1 = output routine.
+    for (my $i=0;$i<@vars;$i++) {
+
+      # determine Pars and OtherPars sections
+      my $var  = $vars[$i];
+      $var = "[o]$var" if ($output);
+      my $type = $types[$i];
+      my $dim  = ($type =~ tr/*/*/); # count of stars in type (PLFLT ** = 2D)
+      my $dimstr;
+      if    ($dim == 0) { $dimstr = '()'; } 
+      elsif ($dim == 1) { $dimstr = '(dima)'; } 
+      elsif ($dim == 2) { $dimstr = '(dima,dimb)'; } 
+
+      if ($type =~ /PLFLT/) {
+        $pars .= "double $var$dimstr; " # double  input variable
+      } elsif ($type =~ /PLINT/) {
+        $pars .= "int $var$dimstr; "    # integer input variable
+      } elsif ($type =~ /char\s*\*/) {  # char * input or output
+	$otherpars .= "char *$vars[$i]; ";
+      } else { 
+        die "unsupported type: $type"; 
+      }
+
+      # Determine Code section
+      if      ($type =~ /char\s*\*/) { # char * input or output
+        $code .= "\$COMP($vars[$i]),";
+      } elsif ($dim == 0) { # pass by value
+        $code .= "\$$vars[$i](),";
+      } else {
+        $code .= "\$P($vars[$i]),";
+      }
+
+    }
+    
+    chop($code);
+    $code .= ');';
+
+    # do the definition
+    print "pp_def (\'$pfunc_name\', 
+           GenericTypes => [D], 
+           Pars => \'$pars\', 
+           OtherPars => \'$otherpars\', 
+           Code => \'$code\'
+          );
+
+          " if ($debug);
+
+    pp_def ($pfunc_name, 
+ 	    GenericTypes => [D], 
+            Pars => $pars, 
+            OtherPars => $otherpars, 
+            Code => $code);
+
+  }
+
+}
+
+
+#-------------------------------------------------------------------------
+# Create low level interface from edited PLplot header file.
+#-------------------------------------------------------------------------
+
+create_low_level (<<'EODEF');
+void c_pladv(PLINT page);
+void plarrows(PLFLT *u, PLFLT *v, PLFLT *x, PLFLT *y, PLINT n, PLFLT scale, PLFLT dx, PLFLT dy);
+void c_plaxes(PLFLT x0, PLFLT y0, const char *xopt, PLFLT xtick, PLINT nxsub, const char *yopt, PLFLT ytick, PLINT nysub);
+void c_plbin(PLINT nbin, PLFLT *x, PLFLT *y, PLINT center);
+void c_plbop(void);
+void c_plbox(const char *xopt, PLFLT xtick, PLINT nxsub, const char *yopt, PLFLT ytick, PLINT nysub);
+void c_plbox3(const char *xopt, const char *xlabel, PLFLT xtick, PLINT nsubx, const char *yopt, const char *ylabel, PLFLT ytick, PLINT nsuby, const char *zopt, const char *zlabel, PLFLT ztick, PLINT nsubz);
+void c_plxormod(PLINT mode, PLINT *status);  
+void c_plcol0(PLINT icol0);
+void c_plcol1(PLFLT col1);
+void c_plcpstrm(PLINT iplsr, PLINT flags);
+void pldid2pc(PLFLT *xmin, PLFLT *ymin, PLFLT *xmax, PLFLT *ymax);
+void pldip2dc(PLFLT *xmin, PLFLT *ymin, PLFLT *xmax, PLFLT *ymax);
+void c_plend(void);
+void c_plend1(void);
+void c_plenv(PLFLT xmin, PLFLT xmax, PLFLT ymin, PLFLT ymax, PLINT just, PLINT axis);
+void c_pleop(void);
+void c_plerrx(PLINT n, PLFLT *xmin, PLFLT *xmax, PLFLT *y);
+void c_plerry(PLINT n, PLFLT *x, PLFLT *ymin, PLFLT *ymax);
+void c_plfamadv(void);
+void c_plfill(PLINT n, PLFLT *x, PLFLT *y);
+void c_plfill3(PLINT n, PLFLT *x, PLFLT *y, PLFLT *z);
+void c_plflush(void);
+void c_plfont(PLINT ifont);
+void c_plfontld(PLINT fnt);
+void c_plgchr(PLFLT *p_def, PLFLT *p_ht);
+void c_plgcol0(PLINT icol0, PLINT *r, PLINT *g, PLINT *b);
+void c_plgcolbg(PLINT *r, PLINT *g, PLINT *b);
+void c_plgcompression(PLINT *compression);
+void c_plgdev(char *p_dev);
+void c_plgdidev(PLFLT *p_mar, PLFLT *p_aspect, PLFLT *p_jx, PLFLT *p_jy);
+void c_plgdiori(PLFLT *p_rot);
+void c_plgdiplt(PLFLT *p_xmin, PLFLT *p_ymin, PLFLT *p_xmax, PLFLT *p_ymax);
+void c_plgfam(PLINT *p_fam, PLINT *p_num, PLINT *p_bmax);
+void c_plgfnam(char *fnam);
+void c_plglevel(PLINT *p_level);
+void c_plgpage(PLFLT *p_xp, PLFLT *p_yp,PLINT *p_xleng, PLINT *p_yleng, PLINT *p_xoff, PLINT *p_yoff);
+void c_plgra(void);
+void c_plgspa(PLFLT *xmin, PLFLT *xmax, PLFLT *ymin, PLFLT *ymax);
+void c_plgstrm(PLINT *p_strm);
+void c_plgver(char *p_ver);
+void c_plgxax(PLINT *p_digmax, PLINT *p_digits);
+void c_plgyax(PLINT *p_digmax, PLINT *p_digits);
+void c_plgzax(PLINT *p_digmax, PLINT *p_digits);
+void c_plhist(PLINT n, PLFLT *data, PLFLT datmin, PLFLT datmax, PLINT nbin, PLINT oldwin);
+void c_plhls(PLFLT h, PLFLT l, PLFLT s);
+void c_plinit(void);
+void c_pljoin(PLFLT x1, PLFLT y1, PLFLT x2, PLFLT y2);
+void c_pllab(const char *xlabel, const char *ylabel, const char *tlabel);
+void c_pllightsource(PLFLT x, PLFLT y, PLFLT z);
+#void c_plline(PLINT n, PLFLT *x, PLFLT *y); # defined below with bad value support
+void c_plline3(PLINT n, PLFLT *x, PLFLT *y, PLFLT *z);
+void c_pllsty(PLINT lin);
+#void c_plmesh(PLFLT *x, PLFLT *y, PLFLT **z, PLINT nx, PLINT ny, PLINT opt); # must handle ** parms separately
+void c_plmkstrm(PLINT *p_strm);
+void c_plmtex(const char *side, PLFLT disp, PLFLT pos, PLFLT just, const char *text);
+#void c_plot3d(PLFLT *x, PLFLT *y, PLFLT **z, PLINT nx, PLINT ny, PLINT opt, PLINT side); # must handle ** parms separately
+#void c_plotsh3d(PLFLT *x, PLFLT *y, PLFLT **z, PLINT nx, PLINT ny, PLINT side); # must handle ** parms separately
+void c_plpat(PLINT nlin, PLINT *inc, PLINT *del);
+void c_plpoin(PLINT n, PLFLT *x, PLFLT *y, PLINT code);
+void c_plpoin3(PLINT n, PLFLT *x, PLFLT *y, PLFLT *z, PLINT code);
+void c_plpoly3(PLINT n, PLFLT *x, PLFLT *y, PLFLT *z, PLINT *draw);
+void c_plprec(PLINT setp, PLINT prec);
+void c_plpsty(PLINT patt);
+void c_plptex(PLFLT x, PLFLT y, PLFLT dx, PLFLT dy, PLFLT just, const char *text);
+void c_plreplot(void);
+void c_plrgb(PLFLT r, PLFLT g, PLFLT b);
+void c_plrgb1(PLINT r, PLINT g, PLINT b);
+void c_plschr(PLFLT def, PLFLT scale);
+void c_plscmap0n(PLINT ncol0);
+void c_plscmap1n(PLINT ncol1);
+void c_plscmap0(PLINT *r, PLINT *g, PLINT *b, PLINT ncol0);
+void c_plscmap1(PLINT *r, PLINT *g, PLINT *b, PLINT ncol1);
+void c_plscmap1l(PLINT itype, PLINT npts, PLFLT *intensity, PLFLT *coord1, PLFLT *coord2, PLFLT *coord3, PLINT *rev);
+void c_plscol0(PLINT icol0, PLINT r, PLINT g, PLINT b);
+void c_plscolbg(PLINT r, PLINT g, PLINT b);
+void c_plscolor(PLINT color);
+void c_plscompression(PLINT compression);
+void c_plsdev(const char *devname);
+void c_plsdidev(PLFLT mar, PLFLT aspect, PLFLT jx, PLFLT jy);
+void c_plsdimap(PLINT dimxmin, PLINT dimxmax, PLINT dimymin, PLINT dimymax, PLFLT dimxpmm, PLFLT dimypmm);
+void c_plsdiori(PLFLT rot);
+void c_plsdiplt(PLFLT xmin, PLFLT ymin, PLFLT xmax, PLFLT ymax);
+void c_plsdiplz(PLFLT xmin, PLFLT ymin, PLFLT xmax, PLFLT ymax);
+void c_pl_setcontlabelparam(PLFLT offset, PLFLT size, PLFLT spacing, PLINT active);
+void c_pl_setcontlabelformat(PLINT lexp, PLINT sigdig);
+void c_plsfam(PLINT fam, PLINT num, PLINT bmax);
+void c_plsfnam(const char *fnam);
+void c_plsmaj(PLFLT def, PLFLT scale);
+void c_plsmin(PLFLT def, PLFLT scale);
+void c_plsori(PLINT ori);
+void c_plspage(PLFLT xp, PLFLT yp, PLINT xleng, PLINT yleng, PLINT xoff, PLINT yoff);
+void c_plspause(PLINT pause);
+void c_plsstrm(PLINT strm);
+void c_plssub(PLINT nx, PLINT ny);
+void c_plssym(PLFLT def, PLFLT scale);
+void c_plstar(PLINT nx, PLINT ny);
+void c_plstart(const char *devname, PLINT nx, PLINT ny);
+void c_plstyl(PLINT nms, PLINT *mark, PLINT *space);
+void c_plsvpa(PLFLT xmin, PLFLT xmax, PLFLT ymin, PLFLT ymax);
+void c_plsxax(PLINT digmax, PLINT digits);
+void plsxwin(PLINT window_id);
+void c_plsyax(PLINT digmax, PLINT digits);
+void c_plsym(PLINT n, PLFLT *x, PLFLT *y, PLINT code);
+void c_plszax(PLINT digmax, PLINT digits);
+void c_pltext(void);
+void c_plvasp(PLFLT aspect);
+void c_plvpas(PLFLT xmin, PLFLT xmax, PLFLT ymin, PLFLT ymax, PLFLT aspect);
+void c_plvpor(PLFLT xmin, PLFLT xmax, PLFLT ymin, PLFLT ymax);
+void c_plvsta(void);
+void c_plw3d(PLFLT basex, PLFLT basey, PLFLT height, PLFLT xmin0, PLFLT xmax0, PLFLT ymin0, PLFLT ymax0, PLFLT zmin0, PLFLT zmax0, PLFLT alt, PLFLT az);
+void c_plwid(PLINT width);
+void c_plwind(PLFLT xmin, PLFLT xmax, PLFLT ymin, PLFLT ymax);
+void c_plsetopt(char *opt, char *optarg);
+void plP_gpixmm(PLFLT *p_x, PLFLT *p_y);
+EODEF
+
+# C routine to draw lines with gaps.  This is useful for map continents and other things.
+pp_def ('plline',
+         Pars => 'x(n); y(n)',
+         GenericTypes => [D],
+         HandleBad => 1,
+         NoBadifNaN => 1,
+         Code => 'c_plline($SIZE(n),$P(x),$P(y));',
+         BadCode => 'int i;
+                     int j;
+                     for (i=1;i<$SIZE(n);i++) {
+                       j = i-1;	/* PP does not like using i-1 in a PDL ref.  Use j instead. */
+                       if ($ISGOOD(x(n=>i)) && $ISGOOD(x(n=>j))) {
+                         c_pljoin ($x(n=>j), $y(n=>j), $x(n=>i), $y(n=>i));
+                       }
+                     }',
+        );
+
+# C routine to draw points with a color scale
+pp_def ('plcolorpoints',
+         Pars => 'x(n); y(n); z(n); int sym();',
+         GenericTypes => [D],
+         Code => 'int i;
+                  int j;
+                  int ns = $SIZE(n);
+                  double zrange, ci;
+
+                  /* find range of z */
+
+                  double minz =  9.99e30;
+                  double maxz = -9.99e30;
+                  for (i=0;i<ns;i++) {
+                    if ($z(n=>i) < minz) minz = $z(n=>i);
+                    if ($z(n=>i) > maxz) maxz = $z(n=>i);
+                  }
+                  zrange  = maxz  - minz;
+
+                  for (i=1;i<ns;i++) {
+                    ci = ($z(n=>i) - minz) / zrange;  /* get color idx in 0-1 range */
+                    c_plcol1 (ci); /* set current color */
+                    c_plpoin (1, &$x(n=>i), &$y(n=>i), $sym()); /* plot it */
+                  }',
+        );
+
+#
+## simplified interfaces to plshades: shade and contour plots
+#
+
+# shade plot with linear mapping of z coords to world XY coords
+# NOTE:  the Z grid is indexed in C fashion (Y, X) instead of FORTRAN fashion (X, Y)!
+pp_def ('plshades',
+         Pars => 'z(y,x); xmin(); xmax(); ymin(); ymax(); clevel(l); int fill_width(); 
+                  int cont_color(); int cont_width(); int rectangular(); xmap(x); ymap(y)',
+         GenericTypes => [D],
+         Code => 'int nx    = $SIZE(x);
+                  int ny    = $SIZE(y);
+                  int nlvl  = $SIZE(l);
+                  int i,j;
+                  PLcGrid  cgrid1; 
+                  double *z = $P(z);
+                  double **vz = calloc(nx, sizeof(double *)); // allocate pointers to rows of z
+                  for (i=0;i<nx;i++) vz[i] = z + ny*i; // fill in ptrs to rows of z
+
+                  cgrid1.xg = $P(xmap);
+                  cgrid1.yg = $P(ymap);
+                  cgrid1.nx = nx;
+                  cgrid1.ny = ny;
+
+                  c_plshades (vz, nx, ny, NULL, $xmin(), $xmax(), $ymin(), $ymax(), 
+                              $P(clevel), nlvl, $fill_width(), $cont_color(), $cont_width(), 
+                              plfill, $rectangular(), pltr1, (void *) &cgrid1);
+                  free(vz);',
+       );
+
+pp_done();
+
+
+
+
+
+
+
