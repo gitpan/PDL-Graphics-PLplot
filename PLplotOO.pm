@@ -17,6 +17,10 @@ For more information on PLplot, see
 
  http://plplot.sourceforge.net
 
+ Also see the PLplot documentation at:
+
+ http://plplot.sourceforge.net/resources/docbook-manual/
+
 Also see the test file, test.pl in this distribution for some working examples.
 
 =head1 DESCRIPTION
@@ -70,6 +74,21 @@ the page.
 =for example
 
   PDL::Graphics::PLplotOO->new(DEV => 'png',  FILE => 'test.png', JUST => 1);
+
+=head2 ORIENTATION
+
+The orientation of the plot:
+  0 --   0 degrees (landscape mode) 
+  1 --  90 degrees (portrait mode)
+  2 -- 180 degrees (seascape mode)
+  3 -- 270 degrees (upside-down mode)
+
+Intermediate values (0.2) are acceptable if you are feeling daring.
+
+=for example
+
+  # portrait orientation
+  PDL::Graphics::PLplotOO->new(DEV => 'png',  FILE => 'test.png', ORIENTATION => 1);
 
 =head2 PAGESIZE
 
@@ -127,6 +146,12 @@ Some pre-defined triples are included:
 =head2 LINEWIDTH
 
 Set the line width for plotting.  Values range from 1 to a device dependent maximum.
+
+=head2 LINESTYLE
+
+Set the line style for plotting.  Pre-defined line styles use values 1 to 8, one being
+a solid line, 2-8 being various dashed patterns.
+
 
 =head2 PALETTE
 
@@ -307,7 +332,7 @@ Create an object representing a plot.
   my $pl = PDL::Graphics::PLplotOO->new(DEV => 'png',  FILE => 'test.png');
 
 
-=head2 set
+=head2 setparm
 
 =for ref
 
@@ -333,7 +358,7 @@ Set options for a plot object.
 
 =for example
 
-  $pl->set (TEXTSIZE => 2);
+  $pl->setparm (TEXTSIZE => 2);
 
 =head2 xyplot
 
@@ -370,6 +395,36 @@ example.
   $pl->xyplot($x, $y, PLOTTYPE => 'LINEPOINTS', COLOR => [50,230,30]);
   $pl->xyplot($x, $y, PALETTE => 'RAINBOW', PLOTTYPE => 'POINTS', COLORMAP => $z);
 
+
+=head2 text
+
+=for ref
+
+Print text on the plot.
+
+=for usage
+
+ Arguments:
+ $text -- The text string to print.  May contain PLplot escape sequences, see
+ http://plplot.sourceforge.net/resources/docbook-manual/plplotdoc-html-0.4.3/escape-sequences.html
+
+ Supported options:
+ All options except:
+
+ BACKGROUND
+ DEV
+ FILE
+ FRAMECOLOR
+ JUST
+ PAGESIZE
+ SUBPAGES
+
+ (These must be set in call to 'new'.)
+
+=for example
+
+  $pl->text ("Pressure (lb/in#u2#d): #(850)", TEXTPOSITION => ['b', 4.0, 0.5, 0.5]);
+  (See also the TEXTPOSITION option above)
 
 =head2 colorkey
 
@@ -472,7 +527,7 @@ perl(1), PDL(1), http://plplot.sourceforge.net/
 =cut
 
 package PDL::Graphics::PLplotOO;
-$VERSION = '0.14';
+$VERSION = '0.18';
 
 # pull in low level interface
 use PDL::Graphics::PLplot;
@@ -571,7 +626,14 @@ use vars qw(%_constants %_actions);
      $self->{JUST} = $just;
    },
 
-   LINEWIDTH  => sub { plwid    ($_[1]) },
+   LINEWIDTH  => sub { plwid  ($_[1]) },
+
+   LINESTYLE  => sub { 
+     my $self = shift;
+     my $sty  = shift;
+     die "LINESTYLE must range from 1 to 8" unless ($sty >= 1 and $sty <= 8);
+     $self->{LINESTYLE} = $sty;
+   },
 
    # set driver options, example for ps driver, {text => 1} is accepted
    OPTS => sub {
@@ -581,6 +643,15 @@ use vars qw(%_constants %_actions);
      foreach my $opt (keys %$opts) {
        plsetopt ($opt, $$opts{$opt});
      }
+   },
+
+   # set driver options, example for ps driver, {text => 1} is accepted
+   ORIENTATION => sub {
+     my $self   = shift;
+     my $orient = shift;
+
+     die "Orientation must be between 0 and 4" unless ($orient >= 0 and $orient <= 4);
+     $self->{ORIENTATION} = $orient;
    },
 
    PAGESIZE   =>
@@ -667,10 +738,10 @@ use vars qw(%_constants %_actions);
      my $self = shift;
      my $val  = shift;
      
-     if ($val > 0 && $val < 128) {
+     if ($val >= 0 && $val < 3000) {
        $self->{SYMBOL} = $val;
      } else {
-       die "Illegal symbol number.  Legal symbols are between 1 and 127";
+       die "Illegal symbol number.  Legal symbols are between 0 and 3000";
      }
    },
 
@@ -874,6 +945,8 @@ sub new {
 	      VIEWPORT   => [0.1, 0.87, 0.1, 0.85],
 	      SUBPAGE    => 0,
 	      PAGESIZE   => [600, 500],
+	      LINESTYLE  => 1,
+	      ORIENTATION=> 0,
 	      @_);
 
 
@@ -885,7 +958,11 @@ sub new {
   # Do initial setup
   plspage (0, 0, @{$self->{PAGESIZE}}, 0, 0) if (defined($self->{PAGESIZE}));
   plssub (@{$self->{SUBPAGES}});
+  plfontld (1); # extented symbol pages
   plinit ();
+
+  # set page orientation
+  plsdiori ($self->{ORIENTATION});
 
   # set up plotting box
   $self->_setwindow;
@@ -941,6 +1018,9 @@ sub xyplot {
   # get the color requested for the line/points
   plcol0  ($self->{CURRENT_COLOR_IDX});
 
+  # set line style for plot only (not box)
+  pllsty ($self->{LINESTYLE});
+
   # Plot lines if requested
   if  ($self->{PLOTTYPE} =~ /LINE/) {
     plline ($x, $y);
@@ -962,7 +1042,7 @@ sub xyplot {
     if (defined($z)) {  # if a color range plot requested
       plcolorpoints ($x, $y, $z, $c);
     } else {
-      plpoin ($x->nelem, $x, $y, $c);
+      plsym ($x->nelem, $x, $y, $c);
     }
   }
 
@@ -1093,6 +1173,9 @@ sub histogram {
   # plot box
   plcol0  (1); # set to frame color
   plbox (0, 0, 0, 0, $self->{XBOX}, $self->{YBOX}); # !!! note out of order call
+
+  # set line style for plot only (not box)
+  pllsty ($self->{LINESTYLE});
 
   plhist ($x->nelem, $x, $min, $max, $nbins, 1);  # '1' is oldbins parm:  dont call plenv!
 }

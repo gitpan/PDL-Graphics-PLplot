@@ -329,7 +329,7 @@ pp_def ('plcolorpoints',
                   for (i=1;i<ns;i++) {
                     ci = ($z(n=>i) - minz) / zrange;  /* get color idx in 0-1 range */
                     c_plcol1 (ci); /* set current color */
-                    c_plpoin (1, &$x(n=>i), &$y(n=>i), $sym()); /* plot it */
+                    c_plsym (1, &$x(n=>i), &$y(n=>i), $sym()); /* plot it */
                   }',
         );
 

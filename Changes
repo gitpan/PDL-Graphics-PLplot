@@ -5,3 +5,8 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
 
 0.11  First version released to CPAN.  Does line and point plots and Shade plots.
       Still missing support for 3D plots (but this could easily be added).
+
+0.18  4/17/2002
+
+      Second CPAN release.  Includes support for expanded character set, doc updates
+      and many small feature additions.

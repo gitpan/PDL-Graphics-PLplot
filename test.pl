@@ -6,7 +6,7 @@
 # Change 1..1 below to 1..last_test_to_print .
 # (It may become useful if the test is moved to ./t subdirectory.)
 
-BEGIN { $| = 1; print "1..17\n"; }
+BEGIN { $| = 1; print "1..20\n"; }
 END {print "not ok 1\n" unless $loaded;}
 use PDL;
 use PDL::Graphics::PLplot;
@@ -131,7 +131,7 @@ my $a  = (sequence(20)/20) * 2 * $pi;
 my $b  = sin($a);
 my $c  = cos($a);
 
-$pl->xyplot ($a, $b, SYMBOL => 17, SYMBOLSIZE => 1.5, PALETTE => 'RAINBOW', PLOTTYPE => 'POINTS', COLORMAP => $c);
+$pl->xyplot ($a, $b, SYMBOL => 850, SYMBOLSIZE => 1.5, PALETTE => 'RAINBOW', PLOTTYPE => 'POINTS', COLORMAP => $c);
 $pl->colorkey ($c, 'v', VIEWPORT => [0.93, 0.96, 0.15, 0.85]);
 $pl->colorkey ($c, 'h', VIEWPORT => [0.15, 0.85, 0.92, 0.95]);
 $pl->close;
@@ -259,12 +259,49 @@ plend();
 
 ok -s "test16.xfig" > 0, 16;
 
-# test multiply pages perl plot (high level interface)
+# test multiple pages per plot (high level interface)
 my $pl = PDL::Graphics::PLplotOO->new (DEV => 'xfig', FILE => "test17.xfig", SUBPAGES => [1,2]);
 $pl->histogram ($x, $nbins, BOX => [$min, $max, 0, 100]); 
 $pl->histogram ($x, $nbins, BOX => [$min, $max, 0, 100], SUBPAGE => 2); 
 $pl->close;
 ok -s "test17.xfig" > 0, 17;
+
+my $pl = PDL::Graphics::PLplotOO->new (DEV => 'xfig', FILE => "test18.xfig");
+my $x  = sequence(10);
+my $y  = $x**2;
+$pl->xyplot($x, $y, PLOTTYPE => 'LINE', LINESTYLE => 2);
+$pl->close;
+ok -s "test18.xfig" > 0, 18;
+
+# test setting plot orientation
+my $pl = PDL::Graphics::PLplotOO->new (DEV => 'xfig', FILE => "test19.xfig", ORIENTATION => 1);
+my $x  = sequence(10);
+my $y  = $x**2;
+$pl->xyplot($x, $y, PLOTTYPE => 'LINE', LINESTYLE => 2);
+$pl->close;
+ok -s "test19.xfig" > 0, 19;
+
+# test symbol plotting
+my $pl = PDL::Graphics::PLplotOO->new (DEV => 'xfig', FILE => "test20.xfig");
+$pl->setparm (BOX => [0,200,0,200]);
+for (my $x=0;$x<20;$x++) {
+  for (my $y=0;$y<20;$y++) {
+    my $xp = pdl(10*$x);
+    my $yp = pdl(10*$y);
+    $pl->xyplot($xp, $yp, PLOTTYPE => 'POINTS', SYMBOL => 20*$x+$y);
+  }
+}
+$pl->text ("Pressure (lb/in#u2#d): #(850)", TEXTPOSITION => ['b', 3.0, 0.5, 0.5]);
+$pl->close;
+ok -s "test20.xfig" > 0, 20;
+
+
+
+
+
+
+
+
 
 
 
