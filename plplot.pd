@@ -69,6 +69,7 @@ sub create_low_level {
       $varname =~ s/1/one/;
       $varname =~ s/2/two/; 
       $varname =~ s/3/three/; # PP doe not like variable names containing numbers
+      $varname =~ s/int/in/;  # PP has trouble with variables starting with 'int'
       $parm =~ s/const //;    # get rid of 'const' in C type
       $parm =~ s/^\s+//;
       $parm =~ s/\s+$//;      # get rid of white space from 'parm'
@@ -100,7 +101,7 @@ sub create_low_level {
       elsif ($dim == 2) { $dimstr = '(dima,dimb)'; } 
 
       if ($type =~ /PLFLT/) {
-        $pars .= "double $var$dimstr; " # double  input variable
+        $pars .= " double $var$dimstr; " # double input variable
       } elsif ($type =~ /PLINT/) {
         $pars .= "int $var$dimstr; "    # integer input variable
       } elsif ($type =~ /char\s*\*/) {  # char * input or output
@@ -123,21 +124,29 @@ sub create_low_level {
     chop($code);
     $code .= ');';
 
-    # do the definition
-    print "pp_def (\'$pfunc_name\', 
-           GenericTypes => [D], 
-           Pars => \'$pars\', 
-           OtherPars => \'$otherpars\', 
-           Code => \'$code\'
-          );
+    if ($pars eq '' and $otherpars eq '') {
+      my $xsout = "void\n$pfunc_name()\nCODE:\n\t$func_name();\n";
+      print "$xsout" if ($debug);	
+      pp_addxs ('', $xsout);     
+      pp_add_exported('', $pfunc_name);
+    } else {                                                                       
 
-          " if ($debug);
+      # do the definition
+      print "pp_def (\'$pfunc_name\', 
+             GenericTypes => [D], 
+             Pars => \'$pars\', 
+             OtherPars => \'$otherpars\', 
+             Code => \'$code\'
+            );
 
-    pp_def ($pfunc_name, 
- 	    GenericTypes => [D], 
-            Pars => $pars, 
-            OtherPars => $otherpars, 
-            Code => $code);
+            " if ($debug);
+
+      pp_def ($pfunc_name, 
+ 	      GenericTypes => [D], 
+              Pars => $pars, 
+              OtherPars => $otherpars, 
+              Code => $code);
+    }
 
   }
 
@@ -290,12 +299,12 @@ pp_def ('plcolorpoints',
          Code => 'int i;
                   int j;
                   int ns = $SIZE(n);
-                  double zrange, ci;
+                  PLFLT zrange, ci;
 
                   /* find range of z */
 
-                  double minz =  9.99e30;
-                  double maxz = -9.99e30;
+                  PLFLT minz =  9.99e30;
+                  PLFLT maxz = -9.99e30;
                   for (i=0;i<ns;i++) {
                     if ($z(n=>i) < minz) minz = $z(n=>i);
                     if ($z(n=>i) > maxz) maxz = $z(n=>i);
@@ -324,8 +333,8 @@ pp_def ('plshades',
                   int nlvl  = $SIZE(l);
                   int i,j;
                   PLcGrid  cgrid1; 
-                  double *z = $P(z);
-                  double **vz = calloc(nx, sizeof(double *)); // allocate pointers to rows of z
+                  PLFLT *z = $P(z);
+                  PLFLT **vz = calloc(nx, sizeof(PLFLT *)); // allocate pointers to rows of z
                   for (i=0;i<nx;i++) vz[i] = z + ny*i; // fill in ptrs to rows of z
 
                   cgrid1.xg = $P(xmap);

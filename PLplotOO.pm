@@ -472,7 +472,7 @@ perl(1), PDL(1), http://plplot.sourceforge.net/
 =cut
 
 package PDL::Graphics::PLplotOO;
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 # pull in low level interface
 use PDL::Graphics::PLplot;

@@ -51,6 +51,15 @@ die "Cannot find plplot header file, plplot.h.
 Please add the correct library path to Makefile.PL or install Plplot" 
   unless defined ($plplot_include_path);
 
+# Test that PLplot was compiled --with-double (IE, a PLFLT is a double)
+my $size = compileAndRun ("-I$plplot_include_path", <<'EOC');
+#include <plplot.h>
+main () {  printf  ("%d", sizeof (PLFLT)); }
+EOC
+
+print "Test compile of plplot program reveals sizeof(PLFLT) = $size\n";
+die "Sizeof(PLFLT) must be 8. PLplot must be compiled --with-double (IE ./configure --with-double)" unless ($size == 8);
+
 $package = ["plplot.pd",PLplot,PDL::Graphics::PLplot];
 WriteMakefile(
 	      'NAME'  	     => 'PDL::Graphics::PLplot',
@@ -69,6 +78,16 @@ WriteMakefile(
 	      );
 
 sub MY::postamble { pdlpp_postamble($package); }	
+
+sub compileAndRun {
+ my $flags = shift;
+ my $code  = shift;
+ 
+ open (OUT, ">temp.c");
+ print OUT $code;
+ close OUT;
+ return `cc $flags temp.c -o temp && ./temp`;
+}
 
 
 
