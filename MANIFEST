@@ -1,10 +1,7 @@
+t/plplot.t
+plplot.pd
 Changes
 README
-MANIFEST
 Makefile.PL
-plplot.pd
-test.pl
-COPYRIGHT
-PLplotOO.pm
-
-
+MANIFEST
+META.yml                                 Module meta-data (added by MakeMaker)
