@@ -19,4 +19,8 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
 
 0.29  6/22/05 Fixed bug in plcolorpoints in the "bad" code for loop
 
+0.30  8/9/06  No longer use plfill for color wedge--this does not work with some
+      drivers including the 'mem' driver.  Also use fewer colors in the color wedge
+      for GIF device plots because of GIF's 256 color limitation
+
  

@@ -157,7 +157,7 @@ $PDL_CONFIG{WITH_PLPLOT} = 1;
 %hash = pdlpp_stdargs(@::pack);          # use this for separate module          
 
 $hash{'OPTIMIZE'}  = '-g'; # If you want to debug, uncomment this.
-$hash{'VERSION'}   = '0.29';
+$hash{'VERSION'}   = '0.30';
 $hash{'LIBS'}      = [$libs];
 # add this to allow one to use the /ops/tools/lib plplot libs even when
 # another plplot is installed in /usr/local/lib. D. Hunt 6/4/2004
