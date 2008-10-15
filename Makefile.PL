@@ -3,14 +3,26 @@
 use ExtUtils::MakeMaker;
 use Config;
 
-use PDL::Core::Dev;  # needed for stand-alone version of package.
-                     # Need to comment out
-                     # for package included in PDL distro.
+eval {
+  require PDL::Core::Dev;  # needed for stand-alone version of package.
+                           # Need to comment out
+                           # for package included in PDL distro.
+
+  PDL::Core::Dev->import;
+};
+my $pdl_installed = ($@) ? 0 : 1; # make always == 1 for install from PDL distro.
+print "PDL ", ($pdl_installed ? '' : 'not'), " installed\n";
+
+if (!$pdl_installed) {
+  # write dummy makefile if PDL not installed
+  WriteMakefile(
+		'NAME'         => 'PDL::Graphics::PLplot',
+		'PREREQ_PM'    => { PDL => 0 },
+		);
+  exit;
+}
 
 use vars qw /$plplotvers/; # version of plplot used
-
-# Pick up development utilities
-PDL::Core::Dev->import();
 
 # 
 ## Search for plplot library and include file
@@ -19,11 +31,16 @@ print "\nChecking PDL::Graphics::PLplot...\n";
 
 unlink ("OPTIONS!"); # remove file uses to communicate with plplot.pd
 
-my $libname = "libplplotd.so";
+# on OS-X the library is called libplplotd.dylib, so we
+# use $Config{"so"} to get the extension name
+#
+my $libname = "libplplotd." . $Config{"so"};
+my $libname_static = "libplplotd.a";
 my $incname = "plplot.h";
 
-print "\tPDL_CONFIG{WITH_PLPLOT} is '".$PDL_CONFIG{WITH_PLPLOT}."'   ";
-my $found_plplot = (defined($PDL_CONFIG{WITH_PLPLOT}) && (!$PDL_CONFIG{WITH_PLPLOT})) ? 0 : 1;
+my $found_plplot =
+    (defined($PDL::Config{WITH_PLPLOT}) && (!$PDL::Config{WITH_PLPLOT}))
+    ? 0 : 1;
 print "found_plplot is $found_plplot\n";
 
 unless ($found_plplot) {
@@ -31,19 +48,25 @@ unless ($found_plplot) {
   return if (caller); exit;
 }
 foreach my $libdir (
-		    '/ops/tools/lib',
                     '/usr/local/plplot/lib',
 		    '/usr/local/lib',
 		    '/opt/local/lib',
 		    '/usr/lib',
 		    '/opt/lib',
-		    $PDL_CONFIG{WHERE_PLPLOT_LIBS},
+		    '/ops/tools/lib',
+                    '/sw/lib/',    # default FINK installation
+		    $PDL::Config{WHERE_PLPLOT_LIBS},
 		                  # Add new library paths here!!
 		    ) {
 
   if (-e "$libdir/$libname") {
     $plplot_lib_path = $libdir;
     $ENV{LD_LIBRARY_PATH} .= ":$libdir";
+    last;
+  } elsif (-e "$libdir/$libname_static") {
+    $plplot_lib_path = $libdir;
+    $ENV{LD_LIBRARY_PATH} .= ":$libdir";
+    $libname = $libname_static;
     last;
   }
 
@@ -55,8 +78,6 @@ unless (defined ($plplot_lib_path)) {
 }
 
 foreach my $incdir (
-		    '/ops/tools/include',
-		    '/ops/tools/include/plplot',
                     '/usr/local/plplot/include',
                     '/usr/local/plplot/include/plplot',
 		    '/usr/local/include/plplot',
@@ -65,7 +86,10 @@ foreach my $incdir (
 		    '/usr/include',
 		    '/usr/include/plplot',
 		    '/opt/include',
-		    $PDL_CONFIG{WHERE_PLPLOT_INCLUDE},
+		    '/ops/tools/include/plplot',
+		    '/ops/tools/include',
+                    '/sw/include/plplot/',    # default FINK installation
+		    $PDL::Config{WHERE_PLPLOT_INCLUDE},
 		                  # Add new header paths here!!
 		    ) {
 
@@ -126,6 +150,23 @@ if ($@) {
   open (OPT, ">>OPTIONS!");
   print OPT "NOMEM!\n";
   close OPT;
+} else {
+  print "\tplsmem function found, in-memory plotting available!\n";
+}
+
+# Test if PLplot has plsvect, for in vector plotting
+eval { compileAndRun ("$plplot_include_path -L$plplot_lib_path -lplplotd", 0, <<'EOC'); 
+#include <plplot.h>
+main () {  plsvect (NULL, NULL, 0, 0); }
+EOC
+};
+if ($@) {
+  print "\tplsvect function not found, no vector plotting available!\n";
+  open (OPT, ">>OPTIONS!");
+  print OPT "NOVECT!\n";
+  close OPT;
+} else {
+  print "\tplsvect function found, vector plotting available!\n";
 }
 
 # Test if PLplot has 5 argument plpoly3 (5.1.1 and earlier) or 6 argument (5.2.0 and later)
@@ -146,7 +187,7 @@ if ($@) {
   close OPT;
 }  
 
-$PDL_CONFIG{WITH_PLPLOT} = 1;
+$PDL::Config{WITH_PLPLOT} = 1;
 
 #
 ## new way to get writemakefile args...
@@ -156,8 +197,9 @@ $PDL_CONFIG{WITH_PLPLOT} = 1;
 ### %hash = pdlpp_stdargs_int(@::pack);  # use this for module inside PDL source
 %hash = pdlpp_stdargs(@::pack);          # use this for separate module          
 
+$hash{'PREREQ_PM'} = { PDL => 0 };
 $hash{'OPTIMIZE'}  = '-g'; # If you want to debug, uncomment this.
-$hash{'VERSION'}   = '0.30';
+$hash{'VERSION'}   = '0.37';
 $hash{'LIBS'}      = [$libs];
 # add this to allow one to use the /ops/tools/lib plplot libs even when
 # another plplot is installed in /usr/local/lib. D. Hunt 6/4/2004
@@ -168,11 +210,10 @@ $hash{'clean'}     = {'FILES'  =>
 
 WriteMakefile(%hash);
 
+my $postamble = pdlpp_postamble(@::pack); # or pdlpp_postamble_int(@::pack); # use for install inside PDL distro
+
 # Add genpp rule
-sub MY::postamble {
-### pdlpp_postamble_int(@::pack);  # use this for module inside PDL source 
-    pdlpp_postamble(@::pack);	   # use this for separate module          
-}
+sub MY::postamble { $postamble };
 
 sub compileAndRun {
   my $flags = shift;
@@ -183,16 +224,18 @@ sub compileAndRun {
   print OUT $code;
   close OUT;
   unlink './temp'; # since we work out whether the compile succeeds by presence of this
+  unlink './temp.exe'; # since we work out whether the compile succeeds by presence of this
   
   my $cc = $Config{cc};
   my $ccflags = $Config{ccflags};
   # print "Trying: $cc $ccflags $flags temp.c -o temp\n";
-  system "$cc $ccflags $flags temp.c -o temp > /dev/null 2>&1";
-  die "Cannot compile test program: $code" unless (-e 'temp');
+  system "$cc $ccflags $flags temp.c $flags -o temp > /dev/null 2>&1";
+  unlink('./temp.c');
+  die "Cannot compile test program: $code" unless (-e 'temp' or -e 'temp.exe');
   return unless ($run);
 
   my $res = `./temp`;
-  unlink ('./temp', './temp.c');
+  unlink ('./temp');
   return $res;
 }
 
@@ -202,15 +245,5 @@ sub buildDummy {
   warn $msg . "\n";
   $msg =~ s/\n//g;
   write_dummy_make( $msg );
-  $PDL_CONFIG{WITH_PLPLOT} = 0;
+  $PDL::Config{WITH_PLPLOT} = 0;
 }
-
-
-
-
-
-
-
-
-
-

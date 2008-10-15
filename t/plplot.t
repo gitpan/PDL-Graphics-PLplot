@@ -11,14 +11,13 @@ use PDL::Config;
 use Test::More;
 
 BEGIN{
-  eval " use PDL::Graphics::PLplot; ";
-  unless ($@){
-    plan tests => 28;
+  use PDL::Config;
+  if($PDL::Config{WITH_PLPLOT}) {
+    plan tests => 32;
+    use_ok( "PDL::Graphics::PLplot" );
   }
   else {
-    plan tests => 1;
-    ok (1, "PDL::Graphics::PLplot not installed");
-    exit;
+    plan skip_all => "PDL::Graphics::PLplot not installed";
   }
 }
 
@@ -56,6 +55,9 @@ my ($pl, $x, $y, $min, $max, $oldwin, $nbins);
 my $tmpdir  = $PDL::Config{TEMPDIR} || "/tmp";
 my $tmpfile = $tmpdir . "/foo$$.$dev";
 
+# comment this out for testing!!!
+#my $pid = 0; my $a = 'foo';
+
 if($pid = fork()) {
 	$a = waitpid($pid,0);
 } else {
@@ -75,7 +77,7 @@ Return value $not_ok; a is $a; pid is $pid
 ************************************************************************
 * PLplot failed the crash test: it appears to crash its owner process. *
 * This is probably due to a misconfiguration of the PLplot libraries.  *
-* Next we'll try creating a test window from which will probably dump  *
+* Next we\'ll try creating a test window from which will probably dump  *
 * some (hopefully helpful) error messages and then die.                *
 ************************************************************************
 
@@ -225,7 +227,7 @@ plpoin($x, $y, 2);
 plvpor(0.86,0.90,0.1,0.9);
 plwind (0, 10, 0, 100);
 plbox (0, 0, 0, 0, '', 'TM');
-plscmap1l (0, 2, PDL->new(0,1), PDL->new(0,360), PDL->new(0.5, 0.5), PDL->new(1,1), PDL->new(0));
+plscmap1l (0, PDL->new(0,1), PDL->new(0,360), PDL->new(0.5, 0.5), PDL->new(1,1), pdl []);
 for (my $i=0;$i<10;$i++) {
   plcol1($i/10);
   plfill (PDL->new(0,10,10,0), PDL->new($i*10,$i*10,($i+1)*10,($i+1)*10));
@@ -248,8 +250,8 @@ my $nx = 35;
 my $ny = 46;
 $x = (sequence($nx) - ($nx/2))/($nx/2);
 $y = (sequence($ny) - ($ny/2))/(($ny/2) - 1.0);
-my $xv = $x->dummy(0, $y->nelem);
-my $yv = $y->dummy(1, $x->nelem);
+my $xv = $x->dummy(1, $y->nelem);
+my $yv = $y->dummy(0, $x->nelem);
 my $z = -sin(7*$xv) * cos (7*$yv) + $xv**2 - $yv**2;
 my $nsteps = 15;
 my ($zmin, $zmax) = $z->minmax;
@@ -259,9 +261,11 @@ my $cont_color = 0;
 my $cont_width = 0;
 my $xmap = ((sequence($nx)*(2/($nx-1))) + -1); # map X coords linearly to -1 to 1
 my $ymap = ((sequence($ny)*(2/($ny-1))) + -1);
+my $grid = plAllocGrid ($xmap, $ymap);
 plshades($z, -1, 1, -1, 1,
          $clevel, $fill_width,
-         $cont_color, $cont_width, 1, $xmap, $ymap);
+         $cont_color, $cont_width, 1, 
+	 0, \&pltr1, $grid);
 plend1();
 
 ok (-s "test12.$dev" > 0, "3D color plot, low level interface");
@@ -408,6 +412,12 @@ $pl->bargraph(\@labels, 100*random(scalar(@labels)), COLOR => 'GREEN', MAXBARLAB
 $pl->close;
 ok (-s "test23a.$dev" > 0, "Bar graph part 3");
 
+$pl = PDL::Graphics::PLplot->new(DEV => $dev, FILE => "test23b.$dev");
+@labels = ((map { sprintf ("2001.%03d", $_) } (240..365)), (map { sprintf ("2002.%03d", $_) } (1..100)));
+$pl->bargraph(\@labels, 100*random(scalar(@labels)), COLOR => 'GREEN', TEXTPOSITION => ['tv', 0.5, 0.0, 0.0]);
+$pl->close;
+ok (-s "test23b.$dev" > 0, "Bar graph part 4");
+
 $pl = PDL::Graphics::PLplot->new(DEV => $dev, FILE => "test24.$dev");
 $x  = sequence(10);
 $y  = $x**2;
@@ -417,6 +427,46 @@ $pl->xyplot($x, $y, PLOTTYPE => 'LINE', XERRORBAR => ones(10)*0.5, XTICK => 2,  
 $pl->close;
 ok (-s "test24.$dev" > 0, "Setting error bars and tick size");
 
+$pl = PDL::Graphics::PLplot->new(DEV => $dev, FILE => "test25.$dev");
+$x1  = sequence(20);
+my $y1  = $x1**2;
+
+$x2  = sequence(22);
+my $y2  = sqrt($x2);
+
+my $x3  = sequence(30);
+my $y3  = $x3**3;
+
+my $xs  = [$x1, $x2, $x3];
+my $ys  = [$y1, $y2, $y3];
+
+$pl->stripplots($xs, $ys, PLOTTYPE => 'LINE', TITLE => 'functions', YLAB => ['x**2', 'sqrt(x)', 'x**3']);
+$pl->close;
+ok (-s "test25.$dev" > 0, "Basic stripplots");
+
+$pl = PDL::Graphics::PLplot->new(DEV => $dev, FILE => "test26.$dev");
+$x1  = sequence(20);
+$y1  = $x1**2;
+
+$x2  = sequence(18);
+$y2  = sqrt($x2);
+
+$x3  = sequence(24);
+$y3  = $x3**3;
+
+my $x4  = sequence(27);
+$a  = ($x4/20) * 2 * $pi;
+my $y4  = sin($a);
+
+$xs  = [$x1, $x2, $x3, $x4];
+$ys  = [$y1, $y2, $y3, $y4];
+$pl->stripplots($xs, $ys, PLOTTYPE => 'LINE', TITLE => 'functions',
+                YLAB => ['x**2', 'sqrt(x)', 'x**3', 'sin(x/20*2pi)'],
+                         COLOR => ['GREEN', 'DEEPSKYBLUE', 'DARKORCHID1', 'DEEPPINK'], XLAB => 'X label');
+$pl->close;
+ok (-s "test26.$dev" > 0, "Multi-color stripplots");
+
+# comment this out for testing!!!
 unlink glob ("test*.$dev");
 
 # stop STDERR redirection and examine output
@@ -430,3 +480,6 @@ print "\ncaptured STDERR: ('Opened ...' messages are harmless)\n$txt\n";
 $txt =~ s/Opened test\d*\.$dev\n//sg;
 warn $txt unless $txt =~ /\s*/;
 
+# Local Variables:
+# mode: cperl
+# End:

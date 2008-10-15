@@ -23,4 +23,16 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
       drivers including the 'mem' driver.  Also use fewer colors in the color wedge
       for GIF device plots because of GIF's 256 color limitation
 
- 
+0.31  May 2007 Merge changes from PDL mailing list
+
+0.32  Add TEXTPOSITION support for bargraph
+
+0.33  Added stripplot function for multiple plots with a common X axis.  Added extra colors.
+
+0.34  Added Y_BASE and Y_GUTTER options to stripplot.
+
+0.35  Added new low level functions supporting alpha channels.
+
+0.36  Added pltimefmt call for plplot 5.9.0
+
+0.37  10/15/2008 Handle case of missing PDL better
