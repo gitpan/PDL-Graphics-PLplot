@@ -2081,7 +2081,7 @@ sub create_low_level {
       my $type = $types[$i];
       my $dim  = ($type =~ tr/*/*/); # count of stars in type (PLFLT ** = 2D)
       my $dimstr;
-      if    ($dim == 0) { $dimstr = '()'; }
+      if    ($output || $dim == 0) { $dimstr = '()'; }
       elsif ($dim == 1) { $dimstr = '(dima)'; }
       elsif ($dim == 2) { $dimstr = '(dima,dimb)'; }
 
@@ -2257,6 +2257,8 @@ void c_plglevel(PLINT *p_level);
 void c_plgpage(PLFLT *p_xp, PLFLT *p_yp,PLINT *p_xleng, PLINT *p_yleng, PLINT *p_xoff, PLINT *p_yoff);
 void c_plgra(void);
 void c_plgspa(PLFLT *xmin, PLFLT *xmax, PLFLT *ymin, PLFLT *ymax);
+void c_plgvpd(PLFLT *p_xmin, PLFLT *p_xmax, PLFLT *p_ymin, PLFLT *p_ymax);
+void c_plgvpw(PLFLT *p_xmin, PLFLT *p_xmax, PLFLT *p_ymin, PLFLT *p_ymax);
 #void c_plgstrm(PLINT *p_strm);
 #void c_plgver(char *p_ver);
 void c_plgxax(PLINT *p_digmax, PLINT *p_digits);

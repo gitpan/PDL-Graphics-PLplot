@@ -13,7 +13,7 @@ use Test::More;
 BEGIN{
   use PDL::Config;
   if($PDL::Config{WITH_PLPLOT}) {
-    plan tests => 32;
+    plan tests => 34;
     use_ok( "PDL::Graphics::PLplot" );
   }
   else {
@@ -220,10 +220,17 @@ pladv (0);
 plvsta();
 plwind (0, 1, 0, 1);
 plvpor(0.1,0.85,0.1,0.9);
+
 plwind (0, 10, 0, 100);
 plcol0(1);
 plbox (0, 0, 0, 0, 'BCNST', 'BCNST');
 plpoin($x, $y, 2);
+
+# view port dimensions in normalized device coordinates
+my ($dev_xmin, $dev_xmax, $dev_ymin, $dev_ymax) = plgvpd();
+
+# view port dimensions in world coordinates
+my ($wld_xmin, $wld_xmax, $wld_ymin, $wld_ymax) = plgvpw();
 plvpor(0.86,0.90,0.1,0.9);
 plwind (0, 10, 0, 100);
 plbox (0, 0, 0, 0, '', 'TM');
@@ -235,6 +242,11 @@ for (my $i=0;$i<10;$i++) {
 plend1();
 
 ok (-s "test11.$dev" > 0, "Colored symbol plot with key, via low level interface");
+
+ok (sum(pdl(0.1, 0.85, 0.1, 0.9) - pdl($dev_xmin, $dev_xmax, $dev_ymin, $dev_ymax)) == 0, 
+    "plgvpd call works correctly");
+ok (sum(pdl(-0.0001, 10.0001, -0.001, 100.001) - pdl($wld_xmin, $wld_xmax, $wld_ymin, $wld_ymax)) == 0, 
+    "plgvpw call works correctly");
 
 # Test shade plotting (low level interface)
 plsdev ($dev);

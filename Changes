@@ -36,3 +36,6 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
 0.36  Added pltimefmt call for plplot 5.9.0
 
 0.37  10/15/2008 Handle case of missing PDL better
+
+0.38  10/16/2008 Fixed typo in Makefile.PL that broke build, added plgvpd and plgvpw interfaces
+

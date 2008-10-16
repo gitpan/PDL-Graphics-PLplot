@@ -199,7 +199,7 @@ $PDL::Config{WITH_PLPLOT} = 1;
 
 $hash{'PREREQ_PM'} = { PDL => 0 };
 $hash{'OPTIMIZE'}  = '-g'; # If you want to debug, uncomment this.
-$hash{'VERSION'}   = '0.37';
+$hash{'VERSION'}   = '0.38';
 $hash{'LIBS'}      = [$libs];
 # add this to allow one to use the /ops/tools/lib plplot libs even when
 # another plplot is installed in /usr/local/lib. D. Hunt 6/4/2004
@@ -208,9 +208,9 @@ $hash{'INC'}      .= " $plplot_include_path";
 $hash{'clean'}     = {'FILES'  =>
 			  'PLplot.pm PLplot.xs PLplot.o PLplot.c PLplot.bs *.xfig temp* OPTIONS! Makefile.old'};
 
-WriteMakefile(%hash);
-
 my $postamble = pdlpp_postamble(@::pack); # or pdlpp_postamble_int(@::pack); # use for install inside PDL distro
+
+WriteMakefile(%hash);
 
 # Add genpp rule
 sub MY::postamble { $postamble };
