@@ -48,10 +48,14 @@ unless ($found_plplot) {
   return if (caller); exit;
 }
 foreach my $libdir (
+		    '/usr/local/plplot/lib64',
                     '/usr/local/plplot/lib',
+		    '/usr/local/lib64',
 		    '/usr/local/lib',
 		    '/opt/local/lib',
+		    '/usr/lib64',
 		    '/usr/lib',
+		    '/opt/lib64',
 		    '/opt/lib',
 		    '/ops/tools/lib',
                     '/sw/lib/',    # default FINK installation
@@ -199,7 +203,7 @@ $PDL::Config{WITH_PLPLOT} = 1;
 
 $hash{'PREREQ_PM'} = { PDL => 0 };
 $hash{'OPTIMIZE'}  = '-g'; # If you want to debug, uncomment this.
-$hash{'VERSION'}   = '0.38';
+$hash{'VERSION'}   = '0.39';
 $hash{'LIBS'}      = [$libs];
 # add this to allow one to use the /ops/tools/lib plplot libs even when
 # another plplot is installed in /usr/local/lib. D. Hunt 6/4/2004

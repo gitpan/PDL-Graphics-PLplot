@@ -39,3 +39,6 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
 
 0.38  10/16/2008 Fixed typo in Makefile.PL that broke build, added plgvpd and plgvpw interfaces
 
+0.39  10/29/2008 Added lib64 paths back in to PLplot library search path.
+
+
