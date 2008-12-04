@@ -20,6 +20,11 @@ $noalpha = 0;
 $noalpha = 1 if (grep /NOALPHA!/, @opts);
 
 pp_addpm({At => Top}, <<'EOD');
+
+BEGIN { 
+$VERSION = '0.41' 
+};
+
 =head1 NAME
 
 PDL::Graphics::PLplot - Object-oriented interface from perl/PDL to the PLPLOT plotting library
