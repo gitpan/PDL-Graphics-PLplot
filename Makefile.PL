@@ -3,6 +3,7 @@
 use ExtUtils::MakeMaker;
 use Config;
 
+# comment this block out for PDL internal version
 eval {
   require PDL::Core::Dev;  # needed for stand-alone version of package.
                            # Need to comment out
@@ -11,7 +12,10 @@ eval {
   PDL::Core::Dev->import;
 };
 my $pdl_installed = ($@) ? 0 : 1; # make always == 1 for install from PDL distro.
-print "PDL ", ($pdl_installed ? '' : 'not'), " installed\n";
+print "PDL ", ($pdl_installed ? 'is' : 'is not'), " installed\n";
+# end comment this block out for PDL internal version
+
+#my $pdl_installed = 1; # uncomment for PDL-internal version
 
 if (!$pdl_installed) {
   # write dummy makefile if PDL not installed
@@ -38,11 +42,16 @@ my $libname = "libplplotd." . $Config{"so"};
 my $libname_static = "libplplotd.a";
 my $incname = "plplot.h";
 
+# require bad value support.  D. Hunt 10/20/2008
+unless ($PDL::Config{WITH_BADVAL}) {
+  buildDummy ("Bad value support required!  (Turn on WITH_BADVAL in perldl.conf)");
+  return if (caller); exit;
+}
+
 my $found_plplot =
     (defined($PDL::Config{WITH_PLPLOT}) && (!$PDL::Config{WITH_PLPLOT}))
     ? 0 : 1;
 print "found_plplot is $found_plplot\n";
-
 unless ($found_plplot) {
   buildDummy ("User requested no PLplot interface!");
   return if (caller); exit;
@@ -173,6 +182,21 @@ if ($@) {
   print "\tplsvect function found, vector plotting available!\n";
 }
 
+# Test if PLplot has support for alpha transparency, found in versions 5.9.0 and higher
+eval { compileAndRun ("$plplot_include_path -L$plplot_lib_path -lplplotd",0,<<'EOC');
+#include <plplot.h>
+main () { c_plgcol0a(0, 0, 0, 0, NULL);}
+EOC
+};
+if ($@){
+    print "\tc_plgcol0a function not found, no alpha transparency available (need PLplot 5.9.0 or higher)!\n";
+    open (OPT,">>OPTIONS!");
+    print OPT "NOALPHA!\n";
+    close OPT;
+} else {
+    print "\tc_plgcol0a function found, alpha transparency available!\n";
+}
+
 # Test if PLplot has 5 argument plpoly3 (5.1.1 and earlier) or 6 argument (5.2.0 and later)
 eval { compileAndRun ("$plplot_include_path -L$plplot_lib_path -lplplotd", 0, <<'EOC'); 
 #include <plplot.h>
@@ -198,12 +222,12 @@ $PDL::Config{WITH_PLPLOT} = 1;
 #
 @pack = (["plplot.pd",PLplot,PDL::Graphics::PLplot]);
 
-### %hash = pdlpp_stdargs_int(@::pack);  # use this for module inside PDL source
+#%hash = pdlpp_stdargs_int(@::pack);  # use this for module inside PDL source
 %hash = pdlpp_stdargs(@::pack);          # use this for separate module          
 
 $hash{'PREREQ_PM'} = { PDL => 0 };
 $hash{'OPTIMIZE'}  = '-g'; # If you want to debug, uncomment this.
-$hash{'VERSION'}   = '0.39';
+$hash{'VERSION'}   = '0.40';
 $hash{'LIBS'}      = [$libs];
 # add this to allow one to use the /ops/tools/lib plplot libs even when
 # another plplot is installed in /usr/local/lib. D. Hunt 6/4/2004
@@ -212,7 +236,8 @@ $hash{'INC'}      .= " $plplot_include_path";
 $hash{'clean'}     = {'FILES'  =>
 			  'PLplot.pm PLplot.xs PLplot.o PLplot.c PLplot.bs *.xfig temp* OPTIONS! Makefile.old'};
 
-my $postamble = pdlpp_postamble(@::pack); # or pdlpp_postamble_int(@::pack); # use for install inside PDL distro
+my $postamble = pdlpp_postamble(@::pack); # use for external module
+#my $postamble = pdlpp_postamble_int(@::pack); # use for install inside PDL distro
 
 WriteMakefile(%hash);
 

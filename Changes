@@ -41,4 +41,8 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
 
 0.39  10/29/2008 Added lib64 paths back in to PLplot library search path.
 
+0.40  12/04/2008 Fixed interface to plgcol0, changed plParseOpts to use c_plparseopts (the current standard)
+                 Added interface to plhlsrgb.
+                 Ported back some changes from PDL-2.4.4 release for backwards compatibility with old plplot
+
 

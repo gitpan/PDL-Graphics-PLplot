@@ -16,6 +16,9 @@ $novect = 1 if (grep /NOVECT!/, @opts);
 $plpoly3 = 5;
 $plpoly3 = 6 if (grep /PLPOLY3 = 6/, @opts);
 
+$noalpha = 0;
+$noalpha = 1 if (grep /NOALPHA!/, @opts);
+
 pp_addpm({At => Top}, <<'EOD');
 =head1 NAME
 
@@ -2242,10 +2245,10 @@ void c_plflush(void);
 void c_plfont(PLINT ifont);
 void c_plfontld(PLINT fnt);
 void c_plgchr(PLFLT *p_def, PLFLT *p_ht);
-void c_plgcol0(PLINT icol0, PLINT *r, PLINT *g, PLINT *b);
-void c_plgcol0a(PLINT icol0, PLINT *r, PLINT *g, PLINT *b, PLFLT *a);
+#void c_plgcol0(PLINT icol0, PLINT *r, PLINT *g, PLINT *b); # defined below
+#void c_plgcol0a(PLINT icol0, PLINT *r, PLINT *g, PLINT *b, PLFLT *a);
 void c_plgcolbg(PLINT *r, PLINT *g, PLINT *b);
-void c_plgcolbga(PLINT *r, PLINT *g, PLINT *b, PLFLT *a);
+#void c_plgcolbga(PLINT *r, PLINT *g, PLINT *b, PLFLT *a);
 void c_plgcompression(PLINT *compression);
 #void c_plgdev(char *p_dev);
 void c_plgdidev(PLFLT *p_mar, PLFLT *p_aspect, PLFLT *p_jx, PLFLT *p_jy);
@@ -2266,6 +2269,7 @@ void c_plgyax(PLINT *p_digmax, PLINT *p_digits);
 void c_plgzax(PLINT *p_digmax, PLINT *p_digits);
 #void c_plhist(PLINT n, PLFLT *data, PLFLT datmin, PLFLT datmax, PLINT nbin, PLINT oldwin);
 void c_plhls(PLFLT h, PLFLT l, PLFLT s);
+#void c_plhlsrgb(PLFLT h, PLFLT l, PLFLT s, PLFLT *p_r, PLFLT *p_g, PLFLT *p_b); # implemented below
 void c_plinit(void);
 void c_pljoin(PLFLT x1, PLFLT y1, PLFLT x2, PLFLT y2);
 void c_pllab(const char *xlabel, const char *ylabel, const char *tlabel);
@@ -2292,14 +2296,14 @@ void c_plschr(PLFLT def, PLFLT scale);
 void c_plscmap0n(PLINT ncol0);
 void c_plscmap1n(PLINT ncol1);
 void c_plscmap0(PLINT *r, PLINT *g, PLINT *b, PLINT ncol0);
-void c_plscmap0a(PLINT *r, PLINT *g, PLINT *b, PLFLT *a, PLINT ncol0);
+#void c_plscmap0a(PLINT *r, PLINT *g, PLINT *b, PLFLT *a, PLINT ncol0);
 void c_plscmap1(PLINT *r, PLINT *g, PLINT *b, PLINT ncol1);
-void c_plscmap1a(PLINT *r, PLINT *g, PLINT *b, PLFLT *a, PLINT ncol1);
+#void c_plscmap1a(PLINT *r, PLINT *g, PLINT *b, PLFLT *a, PLINT ncol1);
 #void c_plscmap1l(PLINT itype, PLINT npts, PLFLT *intensity, PLFLT *coord1, PLFLT *coord2, PLFLT *coord3, PLINT *rev);
 void c_plscol0(PLINT icol0, PLINT r, PLINT g, PLINT b);
-void c_plscol0a(PLINT icol0, PLINT r, PLINT g, PLINT b, PLFLT a);
+#void c_plscol0a(PLINT icol0, PLINT r, PLINT g, PLINT b, PLFLT a);
 void c_plscolbg(PLINT r, PLINT g, PLINT b);
-void c_plscolbga(PLINT r, PLINT g, PLINT b, PLFLT a);
+#void c_plscolbga(PLINT r, PLINT g, PLINT b, PLFLT a);
 void c_plscolor(PLINT color);
 void c_plscompression(PLINT compression);
 void c_plsdev(const char *devname);
@@ -2341,9 +2345,25 @@ void c_plwid(PLINT width);
 void c_plwind(PLFLT xmin, PLFLT xmax, PLFLT ymin, PLFLT ymax);
 void c_plsetopt(char *opt, char *optarg);
 void plP_gpixmm(PLFLT *p_x, PLFLT *p_y);
-void c_pltimefmt(const char *fmt);
+#void c_pltimefmt(const char *fmt);
 EODEF
 
+#-------------------------------------------------------------------------
+# take care of low-level funcs available in 5.9.0 (not all are
+# alpha-specific, but it's an adequate canary. Eliminate this chunk
+# and uncomment the lines above when we require at least PLplot 5.9.0.
+# -------------------------------------------------------------------------
+unless ($noalpha){
+  create_low_level (<<'EODEF');
+void c_pltimefmt(const char *fmt);
+void c_plscolbga(PLINT r, PLINT g, PLINT b, PLFLT a);
+void c_plscol0a(PLINT icol0, PLINT r, PLINT g, PLINT b, PLFLT a);
+void c_plscmap1a(PLINT *r, PLINT *g, PLINT *b, PLFLT *a, PLINT ncol1);
+void c_plscmap0a(PLINT *r, PLINT *g, PLINT *b, PLFLT *a, PLINT ncol0);
+void c_plgcolbga(PLINT *r, PLINT *g, PLINT *b, PLFLT *a);
+void c_plgcol0a(PLINT icol0, PLINT *r, PLINT *g, PLINT *b, PLFLT *a);
+EODEF
+}
 # C routine to draw lines with gaps.  This is useful for map continents and other things.
 pp_def ('plline',
          Pars => 'x(n); y(n)',
@@ -2447,22 +2467,24 @@ pp_def ('plParseOpts',
 
                 arr = (AV*) SvRV (sv);
                 newargc = argc = av_len (arr) + 1;
-                args = calloc (argc , sizeof (char*));
+                if (argc > 0) {
+                  args = calloc (argc , sizeof (char*));
 
-                for (i = 0; i < argc; i++) {
-                        STRLEN len;
-                        args[i] = SvPV (* av_fetch (arr, i, 0), len);
+                  for (i = 0; i < argc; i++) {
+                          STRLEN len;
+                          args[i] = SvPV (* av_fetch (arr, i, 0), len);
+                  }
+
+                  $retval() = c_plparseopts (&newargc, args, $COMP (mode));
+
+                  for (i = 0; i < newargc; i++)
+                          av_push (arr, newSVpv (args[i], 0));
+
+                  for (i = 0; i < argc; i++)
+                          av_shift (arr);
+
+                  free (args);
                 }
-
-                $retval() = plParseOpts (&newargc, args, $COMP (mode));
-
-                for (i = 0; i < newargc; i++)
-                        av_push (arr, newSVpv (args[i], 0));
-
-                for (i = 0; i < argc; i++)
-                        av_shift (arr);
-
-                free (args);
         ',
 );
 
@@ -3485,6 +3507,22 @@ unless ($novect) {
 	  GenericTypes => [D],
 	  Code => 'c_plsvect ($P(arrowx), $P(arrowy), $SIZE(npts), $fill());'
 	 );
+
+  pp_def ('plhlsrgb',
+	  GenericTypes => [D],
+	  Pars => 'double h();double l();double s();double [o]p_r();double [o]p_g();double [o]p_b()',
+	  OtherPars => '',
+	  Code => 'c_plhlsrgb($h(),$l(),$s(),$P(p_r),$P(p_g),$P(p_b));'
+	 );
+
+  # void c_plgcol0(PLINT icol0, PLINT *r, PLINT *g, PLINT *b);
+  pp_def ('plgcol0',
+	  GenericTypes => [D],
+	  Pars => 'int icolzero(); int [o]r(); int [o]g(); int [o]b()',
+	  OtherPars => '',
+	  Code => 'c_plgcol0($icolzero(),$P(r),$P(g),$P(b));'
+	 );
+
 }
 
 pp_addpm (<<'EOPM');
