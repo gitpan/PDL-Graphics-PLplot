@@ -50,5 +50,9 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
 
 0.42  12/04/2008 Added plimagefr support to allow complete plplot example x20.pl to work.
 
+0.43  12/05/2008 Added support for environment variables:  PLPLOT_LIBDIR and PLPLOT_INCDIR
+                 to allow the user to specify the plplot location.
+
+
 
 
