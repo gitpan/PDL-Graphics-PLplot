@@ -22,7 +22,7 @@ $noalpha = 1 if (grep /NOALPHA!/, @opts);
 pp_addpm({At => Top}, <<'EOD');
 
 BEGIN { 
-$VERSION = '0.41' 
+$VERSION = '0.42' 
 };
 
 =head1 NAME
@@ -3181,6 +3181,49 @@ pp_def ('plimage',
            plimage (idata, size_x, size_y,
 	     $xmin(), $xmax(), $ymin(), $ymax(), $zmin(), $zmax(),
              $Dxmin(), $Dxmax(), $Dymin(), $Dymax());
+
+           plFree2dGrid (idata, size_x, size_y);'
+	);
+
+
+# Plot image with transformation
+
+pp_def ('plimagefr',
+	GenericTypes => [D],
+	#  plimagefr (idata, nx, ny, xmin, xmax, ymin, ymax, zmin, zmax, valuemin, valuemax, pltr, pltr_data);
+	#  plimagefr ($img,          0,    $width, 0,  $height, 0,    0, $img_min, $img_max, \&pltr2, $grid);
+	Pars => 'idata(nx,ny); xmin(); xmax(); ymin(); ymax();'
+	      . 'zmin(); zmax(); valuemin(); valuemax();', # here!!!
+      	OtherPars => 'SV* pltr; SV* pltr_data;',
+	Code => '
+           int i, j, size_x, size_y;
+           PLFLT** idata;
+ 	   void (*pltrcb) ();
+           PLPointer pltrdt;
+
+           size_x = $SIZE(nx);
+           size_y = $SIZE(ny);
+
+           pltr_subroutine = $COMP(pltr);
+	   check_sub_pointer (pltr_subroutine, "plimagefr: pltr must be either 0 or a subroutine pointer");
+
+	   pltrcb = get_standard_pltrcb ($COMP(pltr));
+           if (pltrcb != pltr_callback)
+             pltrdt = (PLPointer) SvIV ($COMP(pltr_data));
+           else
+             pltrdt = $COMP(pltr_data);
+
+           plAlloc2dGrid (&idata, size_x, size_y);
+
+           for (i = 0; i < size_x; i++)
+             for (j = 0; j < size_y; j++)
+               idata[i][j] = $idata(nx => i, ny => j);
+
+           c_plimagefr (idata, size_x, size_y,
+	     $xmin(), $xmax(), $ymin(), $ymax(), $zmin(), $zmax(),
+             $valuemin(), $valuemax(), 
+             (SvTRUE ($COMP(pltr)) ? pltrcb : NULL),
+             (SvTRUE ($COMP(pltr)) ? pltrdt : NULL));
 
            plFree2dGrid (idata, size_x, size_y);'
 	);

@@ -45,4 +45,10 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
                  Added interface to plhlsrgb.
                  Ported back some changes from PDL-2.4.4 release for backwards compatibility with old plplot
 
+0.41  12/04/2008 Added VERSION in plplot.pd where you can query it from the command line:
+                 perl -MPDL::Graphics::PLplot -e 'print "$PDL::Graphics::PLplot::VERSION\n"'
+
+0.42  12/04/2008 Added plimagefr support to allow complete plplot example x20.pl to work.
+
+
 
