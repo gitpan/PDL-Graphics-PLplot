@@ -22,7 +22,7 @@ $noalpha = 1 if (grep /NOALPHA!/, @opts);
 pp_addpm({At => Top}, <<'EOD');
 
 BEGIN { 
-$VERSION = '0.43' 
+$VERSION = '0.44' 
 };
 
 =head1 NAME
@@ -2577,6 +2577,18 @@ pp_def ('plstyl',
          Code => 'c_plstyl ($SIZE(nms), $P(mark), $P(space));'
        );
 
+# PLplot standard random number generation.  Using this
+# helps to keep the demo plots identical.
+
+pp_def ('plseed',
+         Pars => 'int seed()',
+         Code => 'unsigned int useed = (unsigned int)$seed(); c_plseed(useed);'
+       );
+
+pp_def ('plrandd',
+         Pars => 'double [o]rand()',
+         Code => '$rand() = c_plrandd();'
+       );
 
 # Plot contours
 

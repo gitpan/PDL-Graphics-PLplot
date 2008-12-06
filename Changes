@@ -53,6 +53,8 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
 0.43  12/05/2008 Added support for environment variables:  PLPLOT_LIBDIR and PLPLOT_INCDIR
                  to allow the user to specify the plplot location.
 
+0.44  12/05/2008 Added plseed and plrandd interfaces
+
 
 
 
