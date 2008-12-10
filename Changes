@@ -55,6 +55,10 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
 
 0.44  12/05/2008 Added plseed and plrandd interfaces
 
+0.45  12/10/2008 Fixed routines: plgcol0,  plgcolbg,  plscmap0,  plscmap1
+                                 plgcol0a, plgcolbga, plscmap0a, plscmap1a
+                 To handle output parms and SIZE parms consistently
+                 Added 3D labelling functions for example 28.
 
 
 
