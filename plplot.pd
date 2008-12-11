@@ -22,7 +22,7 @@ $noalpha = 1 if (grep /NOALPHA!/, @opts);
 pp_addpm({At => Top}, <<'EOD');
 
 BEGIN { 
-$VERSION = '0.45' 
+$VERSION = '0.46' 
 };
 
 =head1 NAME
@@ -3633,6 +3633,47 @@ unless ($novect) {
 	   );
 
 
+    #
+    ## UNICODE font manipulation
+    #
+
+    # plgfont(PLINT *p_family, PLINT *p_style, PLINT *p_weight);
+    pp_def ('plgfont',
+	    Pars => 'int [o]p_family(); int [o]p_style(); int [o]p_weight();',
+	    Code => 'c_plgfont($P(p_family),$P(p_style),$P(p_weight));'
+	   );
+
+    #  plsfont (PLINT family, PLINT style, PLINT weight);
+    pp_def ('plsfont',
+	    Pars => 'int family(); int style(); int weight();',
+	    Code => 'c_plsfont($family(),$style(),$weight());'
+	   );
+
+
+pp_addxs (<<"EOC");
+unsigned int plgfci ()
+    CODE:
+    {
+	unsigned int	RETVAL;
+        unsigned int    fci;
+	c_plgfci(&fci);
+        RETVAL = fci;
+
+	XSprePUSH; PUSHu((UV)RETVAL);
+    }
+    XSRETURN(1);
+EOC
+pp_add_exported('', 'plgfci');
+
+pp_addxs (<<'EOC');
+void 
+plsfci(fci)
+        unsigned int fci
+    CODE:
+        c_plsfci(fci);
+EOC
+pp_add_exported('', 'plsfci');
+ 
   }
 
 }

@@ -60,5 +60,6 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
                  To handle output parms and SIZE parms consistently
                  Added 3D labelling functions for example 28.
 
+0.46  12/11/2008 Added font handling routines:  plgfont, plsfont, plgfci, plsfci
 
 
