@@ -62,4 +62,7 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
 
 0.46  12/11/2008 Added font handling routines:  plgfont, plsfont, plgfci, plsfci
 
+0.47  12/18/2008 Added band-aid to get_standard_pltrcb to avoid failure in plshades reported
+                 by Orion Poplawski.  Also added interface to plcalc_world and fixed interface to plgfnam.
+
 

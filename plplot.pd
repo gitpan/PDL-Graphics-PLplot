@@ -22,7 +22,7 @@ $noalpha = 1 if (grep /NOALPHA!/, @opts);
 pp_addpm({At => Top}, <<'EOD');
 
 BEGIN { 
-$VERSION = '0.46' 
+$VERSION = '0.47' 
 };
 
 =head1 NAME
@@ -2256,7 +2256,7 @@ void c_plgdidev(PLFLT *p_mar, PLFLT *p_aspect, PLFLT *p_jx, PLFLT *p_jy);
 void c_plgdiori(PLFLT *p_rot);
 void c_plgdiplt(PLFLT *p_xmin, PLFLT *p_ymin, PLFLT *p_xmax, PLFLT *p_ymax);
 void c_plgfam(PLINT *p_fam, PLINT *p_num, PLINT *p_bmax);
-void c_plgfnam(char *fnam);
+#void c_plgfnam(char *fnam);
 void c_plglevel(PLINT *p_level);
 void c_plgpage(PLFLT *p_xp, PLFLT *p_yp,PLINT *p_xleng, PLINT *p_yleng, PLINT *p_xoff, PLINT *p_yoff);
 void c_plgra(void);
@@ -2742,6 +2742,7 @@ pltr_callback (PLFLT x, PLFLT y, PLFLT* tx, PLFLT* ty, PLPointer pltr_data)
 static void*
 get_standard_pltrcb (SV* cb)
 {
+  if ( !SvROK(cb) ) return NULL; /* Added to prevent bug in plshades for 0 input. D. Hunt 12/18/2008 */
   IV sub = (IV) SvRV (cb);
 
   if (sub == pltr0_iv)
@@ -3377,6 +3378,19 @@ EOC
 
 pp_add_exported ('plgdev');
 
+pp_addxs (<<"EOC");
+char*
+plgfnam ()
+CODE:
+  char driver[80];
+  c_plgfnam (driver);
+  RETVAL = driver;
+OUTPUT:
+  RETVAL
+EOC
+
+pp_add_exported ('plgfnam');
+
 pp_addpm (<<'EOPM');
 =head2 plmkstrm
 
@@ -3647,6 +3661,14 @@ unless ($novect) {
     pp_def ('plsfont',
 	    Pars => 'int family(); int style(); int weight();',
 	    Code => 'c_plsfont($family(),$style(),$weight());'
+	   );
+
+
+
+    #  plcalc_world (PLFLT rx, PLFLT ry, PLFLT *wx, PLFLT *wy, PLINT *window);
+    pp_def ('plcalc_world',
+	    Pars => 'double rx(); double ry(); double [o]wx(); double [o]wy(); int [o]window()',
+	    Code => 'c_plcalc_world($rx(), $ry(), $P(wx), $P(wy), $P(window));'
 	   );
 
 
