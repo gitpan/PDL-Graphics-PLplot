@@ -28,7 +28,7 @@ if (!$pdl_installed) {
 
 use vars qw /$plplotvers/; # version of plplot used
 
-# 
+#
 ## Search for plplot library and include file
 #
 print "\nChecking PDL::Graphics::PLplot...\n";
@@ -48,14 +48,6 @@ unless ($PDL::Config{WITH_BADVAL}) {
   return if (caller); exit;
 }
 
-my $found_plplot =
-    (defined($PDL::Config{WITH_PLPLOT}) && (!$PDL::Config{WITH_PLPLOT}))
-    ? 0 : 1;
-print "found_plplot is $found_plplot\n";
-unless ($found_plplot) {
-  buildDummy ("User requested no PLplot interface!");
-  return if (caller); exit;
-}
 foreach my $libdir (
 		    $ENV{PLPLOT_LIBDIR},
 		    $PDL::Config{WHERE_PLPLOT_LIBS},
@@ -132,8 +124,9 @@ EOC
 
 unless ($size == 8) {
   print "          Sizeof(PLFLT) must be 8. PLplot must be compiled --with-double (IE ./configure --with-double)\n";
-  $found_plplot = 0;
-} 
+  buildDummy ("Cannot find good set of libraries for linking PLplot, try fiddling perldl.conf\n");
+  return if (caller); exit;
+}
 
 # Try linking with library.  New if blocks should be added if necessary
 my $libs;

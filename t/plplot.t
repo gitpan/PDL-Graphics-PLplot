@@ -8,18 +8,8 @@
 
 use PDL;
 use PDL::Config;
-use Test::More;
-
-BEGIN{
-  use PDL::Config;
-  if($PDL::Config{WITH_PLPLOT}) {
-    plan tests => 34;
-    use_ok( "PDL::Graphics::PLplot" );
-  }
-  else {
-    plan skip_all => "PDL::Graphics::PLplot not installed";
-  }
-}
+use PDL::Graphics::PLplot;
+use Test::More qw(no_plan);
 
 ######################### End of black magic.
 
@@ -33,16 +23,6 @@ my $dev = 'xfig';
 
 # redirect STDERR to purge silly 'opened *.xfig' messages
 
-require IO::File;
-local *SAVEERR;
-*SAVEERR = *SAVEERR;  # stupid fix to shut up -w (AKA pain-in-the-...-flag)
-open(SAVEERR, ">&STDERR");
-my $tmp = new_tmpfile IO::File || die "couldn't open tmpfile";
-my $pos = $tmp->getpos;
-local *IN;
-*IN = *$tmp;  # doesn't seem to work otherwise
-open(STDERR,">&IN") or warn "couldn't redirect stdder";
-
 my ($pl, $x, $y, $min, $max, $oldwin, $nbins);
 
 
@@ -54,37 +34,6 @@ my ($pl, $x, $y, $min, $max, $oldwin, $nbins);
 
 my $tmpdir  = $PDL::Config{TEMPDIR} || "/tmp";
 my $tmpfile = $tmpdir . "/foo$$.$dev";
-
-# comment this out for testing!!!
-#my $pid = 0; my $a = 'foo';
-
-if($pid = fork()) {
-	$a = waitpid($pid,0);
-} else {
-	sleep 1;
-	$pl = PDL::Graphics::PLplot->new(DEV=>$dev,FILE=>$tmpfile);
-	exit(0);	
-}
-
-ok( ($not_ok = $? & 0xff )==0 , "PLplot crash test"  );
-unlink $tmpfile;
-
-if($not_ok) {
-	printf SAVEERR <<"EOERR" ;
-
-Return value $not_ok; a is $a; pid is $pid
-
-************************************************************************
-* PLplot failed the crash test: it appears to crash its owner process. *
-* This is probably due to a misconfiguration of the PLplot libraries.  *
-* Next we\'ll try creating a test window from which will probably dump  *
-* some (hopefully helpful) error messages and then die.                *
-************************************************************************
-
-EOERR
-
-	open(STDERR,">&SAVEERR");
-}
 
 $pl = PDL::Graphics::PLplot->new (DEV => $dev,
 				  FILE => "test2.$dev",
@@ -480,17 +429,6 @@ ok (-s "test26.$dev" > 0, "Multi-color stripplots");
 
 # comment this out for testing!!!
 unlink glob ("test*.$dev");
-
-# stop STDERR redirection and examine output
-
-open(STDERR, ">&SAVEERR");
-$tmp->setpos($pos);  # rewind
-my $txt = join '',<IN>;
-close IN; undef $tmp;
-
-print "\ncaptured STDERR: ('Opened ...' messages are harmless)\n$txt\n";
-$txt =~ s/Opened test\d*\.$dev\n//sg;
-warn $txt unless $txt =~ /\s*/;
 
 # Local Variables:
 # mode: cperl

@@ -70,3 +70,10 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
                  new plplot routines to prevent failure with plplot 5.9 and earlier.
 
 0.49  2/26/2009  Fix zero-divide bug in plcolorpoints
+
+0.50  06/15/2009 Took out logic depending upon $PDL::Config{WITH_PLPLOT} (which is set in the
+                 PDL top-level Makefile.PL) for building and testing PDL::Graphics::PLplot.
+                 This dependency required that PLplot detect and build correctly in the original
+                 PDL compile.  One should be able to install PDL::Graphics::PLplot later.
+                 Also stripped a lot of cruft from plplot.t which seems not to be necessary for
+                 more recent plplot versions.
