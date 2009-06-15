@@ -19,10 +19,13 @@ $plpoly3 = 6 if (grep /PLPOLY3 = 6/, @opts);
 $noalpha = 0;
 $noalpha = 1 if (grep /NOALPHA!/, @opts);
 
+$v59_or_earlier = 0;
+$v59_or_earlier = 1 if (grep /NOPLSEED!/, @opts);
+
 pp_addpm({At => Top}, <<'EOD');
 
 BEGIN { 
-$VERSION = '0.47' 
+$VERSION = '0.49' 
 };
 
 =head1 NAME
@@ -1121,7 +1124,7 @@ sub cc2t { [map {hex} split ' ', shift] }
        my $opts = lc shift;
 
        my @opts = split '', $opts;
-       map { 'abcfghilmnst' =~ /$_/i || die "Illegal option $_.  Only abcfghilmnst permitted" } @opts;
+       map { 'abcdfghilmnst' =~ /$_/i || die "Illegal option $_.  Only abcdfghilmnst permitted" } @opts;
 
        $self->{XBOX} = $opts;
      },
@@ -1577,6 +1580,10 @@ sub colorkey {
   # draw labels
   $self->_drawlabels;
 
+  # Allow user to set X, Y box type for color key scale.  D. Hunt 1/7/2009
+  my $xbox = exists($self->{XBOX}) ? $self->{XBOX} : 'TM';
+  my $ybox = exists($self->{YBOX}) ? $self->{YBOX} : 'TM';
+
   my @box;
 
   plcol0  (1); # set to frame color
@@ -1588,11 +1595,11 @@ sub colorkey {
     # set world coordinates based on input variable
     @box = (0, 1, $min, $max);
     plwind (@box);
-    plbox (0, 0, 0, 0, '', 'TM');  # !!! note out of order call
+    plbox (0, 0, 0, 0, '', $ybox);  # !!! note out of order call
   } elsif ($orientation eq 'h') {
     @box = ($min, $max, 0, 1);
     plwind (@box);
-    plbox (0, 0, 0, 0, 'TM', '');  # !!! note out of order call
+    plbox (0, 0, 0, 0, $xbox, '');  # !!! note out of order call
   } else {
     die "Illegal orientation value: $orientation.  Should be 'v' (vertical) or 'h' (horizontal)";
   }
@@ -2386,7 +2393,7 @@ pp_def ('plcolorpoints',
                   zrange  = $maxz() - $minz();
 
                   for (i=0;i<ns;i++) {
-                    ci = ($z(n=>i) - $minz()) / zrange;  /* get color idx in 0-1 range */
+                    ci = (zrange == 0.0) ? 0.5 : ($z(n=>i) - $minz()) / zrange;  /* get color idx in 0-1 range */
                     if (ci < 0) ci = 0; /* enforce bounds */
                     if (ci > 1) ci = 1;
                     c_plcol1 (ci); /* set current color */
@@ -2402,7 +2409,7 @@ pp_def ('plcolorpoints',
 
                   for (i=0;i<ns;i++) {
                     if ($ISBAD(z(n=>i))) continue;
-                    ci = ($z(n=>i) - $minz()) / zrange;  /* get color idx in 0-1 range */
+                    ci = (zrange == 0.0) ? 0.5 : ($z(n=>i) - $minz()) / zrange;  /* get color idx in 0-1 range */
                     if (ci < 0) ci = 0; /* enforce bounds */
                     if (ci > 1) ci = 1;
                     c_plcol1 (ci); /* set current color */
@@ -2567,15 +2574,17 @@ pp_def ('plstyl',
 # PLplot standard random number generation.  Using this
 # helps to keep the demo plots identical.
 
-pp_def ('plseed',
-         Pars => 'int seed()',
-         Code => 'unsigned int useed = (unsigned int)$seed(); c_plseed(useed);'
-       );
+if (!$v59_or_earlier) {
+  pp_def ('plseed',
+          Pars => 'int seed()',
+          Code => 'unsigned int useed = (unsigned int)$seed(); c_plseed(useed);'
+        );
 
-pp_def ('plrandd',
-         Pars => 'double [o]rand()',
-         Code => '$rand() = c_plrandd();'
-       );
+  pp_def ('plrandd',
+          Pars => 'double [o]rand()',
+          Code => '$rand() = c_plrandd();'
+        );
+}
 
 # Plot contours
 
@@ -3188,14 +3197,16 @@ pp_def ('plimage',
 
 # Plot image with transformation
 
-pp_def ('plimagefr',
-	GenericTypes => [D],
-	#  plimagefr (idata, nx, ny, xmin, xmax, ymin, ymax, zmin, zmax, valuemin, valuemax, pltr, pltr_data);
-	#  plimagefr ($img,          0,    $width, 0,  $height, 0,    0, $img_min, $img_max, \&pltr2, $grid);
-	Pars => 'idata(nx,ny); xmin(); xmax(); ymin(); ymax();'
-	      . 'zmin(); zmax(); valuemin(); valuemax();', # here!!!
-      	OtherPars => 'SV* pltr; SV* pltr_data;',
-	Code => '
+if (!$v59_or_earlier) {
+
+  pp_def ('plimagefr',
+          GenericTypes => [D],
+          #  plimagefr (idata, nx, ny, xmin, xmax, ymin, ymax, zmin, zmax, valuemin, valuemax, pltr, pltr_data);
+          #  plimagefr ($img,          0,    $width, 0,  $height, 0,    0, $img_min, $img_max, \&pltr2, $grid);
+          Pars => 'idata(nx,ny); xmin(); xmax(); ymin(); ymax();'
+          . 'zmin(); zmax(); valuemin(); valuemax();', # here!!!
+          OtherPars => 'SV* pltr; SV* pltr_data;',
+          Code => '
            int i, j, size_x, size_y;
            PLFLT** idata;
  	   void (*pltrcb) ();
@@ -3227,6 +3238,7 @@ pp_def ('plimagefr',
 
            plFree2dGrid (idata, size_x, size_y);'
 	);
+}
 
 # Set xor mode:
 # mode = 1-enter, 0-leave, status = 0 if not interactive device
@@ -3651,17 +3663,20 @@ unless ($novect) {
     ## UNICODE font manipulation
     #
 
-    # plgfont(PLINT *p_family, PLINT *p_style, PLINT *p_weight);
-    pp_def ('plgfont',
-	    Pars => 'int [o]p_family(); int [o]p_style(); int [o]p_weight();',
-	    Code => 'c_plgfont($P(p_family),$P(p_style),$P(p_weight));'
-	   );
+    if (!$v59_or_earlier) {
 
-    #  plsfont (PLINT family, PLINT style, PLINT weight);
-    pp_def ('plsfont',
-	    Pars => 'int family(); int style(); int weight();',
-	    Code => 'c_plsfont($family(),$style(),$weight());'
-	   );
+      # plgfont(PLINT *p_family, PLINT *p_style, PLINT *p_weight);
+      pp_def ('plgfont',
+	      Pars => 'int [o]p_family(); int [o]p_style(); int [o]p_weight();',
+	      Code => 'c_plgfont($P(p_family),$P(p_style),$P(p_weight));'
+	     );
+      
+      #  plsfont (PLINT family, PLINT style, PLINT weight);
+      pp_def ('plsfont',
+	      Pars => 'int family(); int style(); int weight();',
+	      Code => 'c_plsfont($family(),$style(),$weight());'
+	     );
+    }
 
 
 

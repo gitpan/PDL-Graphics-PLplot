@@ -217,6 +217,21 @@ if ($@) {
   close OPT;
 }  
 
+# Test if PLplot has the routine plseed, found only in plplot 5.9 svn and later
+eval { compileAndRun ("$plplot_include_path -L$plplot_lib_path -lplplotd",0,<<'EOC');
+#include <plplot.h>
+main () { c_plseed(0);}
+EOC
+};
+if ($@){
+    print "\tc_plseed function not found, plplot versionn 5.9 or earlier!\n";
+    open (OPT,">>OPTIONS!");
+    print OPT "NOPLSEED!\n";
+    close OPT;
+} else {
+    print "\tc_plseed function found, version 5.9 SVN or later!\n";
+}
+
 $PDL::Config{WITH_PLPLOT} = 1;
 
 #
