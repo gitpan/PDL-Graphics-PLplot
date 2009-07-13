@@ -77,3 +77,7 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
                  PDL compile.  One should be able to install PDL::Graphics::PLplot later.
                  Also stripped a lot of cruft from plplot.t which seems not to be necessary for
                  more recent plplot versions.
+
+0.51  7/13/2009  Added logic to manage a PLstream pool instead of just incremenenting the pool number
+                 with each call to 'new'.  This allows one to re-use stream numbers after a call to
+                 'close'.  Bug found by Marek Gierlinski.

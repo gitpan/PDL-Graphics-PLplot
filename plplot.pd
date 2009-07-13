@@ -25,7 +25,7 @@ $v59_or_earlier = 1 if (grep /NOPLSEED!/, @opts);
 pp_addpm({At => Top}, <<'EOD');
 
 BEGIN { 
-$VERSION = '0.50'
+$VERSION = '0.51'
 };
 
 =head1 NAME
@@ -1284,8 +1284,11 @@ sub _drawlabels {
 ## user-visible routines
 #
 
-# Internal record of what PLplot stream number to associate with the the next new plot object.
-my $next_plplot_stream = 0;
+# Pool of PLplot stream numbers.  One of these stream numbers is taken when 'new' is called
+# and when the corresponding 'close' is called, it is returned to the pool.  The pool is
+# just a queue:  'new' shifts stream numbers from the top of the queue, 'close' pushes them
+# back on the bottom of the queue.
+my @plplot_stream_pool = (0..99);
 
 # This routine starts out a plot.  Generally one specifies
 # DEV and FILE (device and output file name) as options.
@@ -1301,8 +1304,8 @@ sub new {
   bless $self, $type;
 
   # set stream number first
-  $self->{STREAMNUMBER} = $next_plplot_stream;
-  $next_plplot_stream++;
+  $self->{STREAMNUMBER} = shift @plplot_stream_pool;
+  die "No more PLplot streams left, too many open PLplot objects!" if (!defined($self->{STREAMNUMBER}));
   plsstrm($self->{STREAMNUMBER});
 
   # set background and frame color first
@@ -1890,11 +1893,16 @@ sub cursor {
 # Explicitly close a plot and free the object
 sub close {
   my $self = shift;
- 
+
   # Set PLplot to right output stream
   plsstrm($self->{STREAMNUMBER});
- 
+
   plend1 ();
+
+  # Return this stream number to the pool.
+  push (@plplot_stream_pool, $self->{STREAMNUMBER});
+  delete $self->{STREAMNUMBER};
+
   return;
 }
 EOD

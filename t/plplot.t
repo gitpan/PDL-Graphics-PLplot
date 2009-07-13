@@ -427,6 +427,19 @@ $pl->stripplots($xs, $ys, PLOTTYPE => 'LINE', TITLE => 'functions',
 $pl->close;
 ok (-s "test26.$dev" > 0, "Multi-color stripplots");
 
+# test opening/closing of more than 100 streams (100 is the max number of plplot streams, close should
+# reuse plplot stream numbers).
+my $count = 0;
+for my $i (1 .. 120) {
+  my $pltfile = "test27.$dev";
+  my $win = PDL::Graphics::PLplot->new(DEV => $dev, FILE => $pltfile, PAGESIZE => [300, 300]);
+  $win->xyplot(pdl(0,1), pdl(0,1));
+  # print "Stream = ", plgstrm(), " Stream in object = ", $win->{STREAMNUMBER}, "\n";
+  $win->close();
+  if (-s $pltfile > 0) { $count++; unlink $pltfile }
+}
+ok ($count == 120, "Opening/closing of > 100 streams");
+
 # comment this out for testing!!!
 unlink glob ("test*.$dev");
 
