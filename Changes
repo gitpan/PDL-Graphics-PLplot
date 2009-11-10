@@ -81,3 +81,6 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
 0.51  7/13/2009  Added logic to manage a PLstream pool instead of just incremenenting the pool number
                  with each call to 'new'.  This allows one to re-use stream numbers after a call to
                  'close'.  Bug found by Marek Gierlinski.
+
+0.52  11/03/2009 Fixes for 64 bit machines:  plFree2dGrid, plFreeGrid, plAllocGrid, plAlloc2dGrid, pltr0, pltr1, pltr2
+                 Now compiler complains less.

@@ -1,5 +1,7 @@
 use Config;
 use vars qw/$nomem $debug $plpoly3 $novect/;
+my $ptrsize = length($Config{'byteorder'}); # 4 or 8 bytes
+my $int_ptr_type = ($ptrsize == 4) ? 'I32' : 'long';
 
 $debug = 0; # show generated pp_defs and other debug info
 
@@ -25,7 +27,7 @@ $v59_or_earlier = 1 if (grep /NOPLSEED!/, @opts);
 pp_addpm({At => Top}, <<'EOD');
 
 BEGIN { 
-$VERSION = '0.51'
+$VERSION = '0.52'
 };
 
 =head1 NAME
@@ -2608,7 +2610,7 @@ void
 $func (x, y, grid)
   double x
   double y
-  int grid
+  long grid
 PPCODE:
   PLFLT tx, ty;
 
@@ -2648,7 +2650,7 @@ pp_def ('plAllocGrid',
           for (i = 0; i < ny; i++)
             grid->yg[i] = $yg(ny => i);
 
-          $grid() = (I32) grid;'
+          $grid() = ('.$int_ptr_type.') grid;'
         );
 
 
@@ -2657,7 +2659,7 @@ pp_def ('plAllocGrid',
 pp_addxs (<<"EOC");
 void
 plFreeGrid (pg)
-  int pg
+  long pg
 PPCODE:
   PLcGrid* grid = (PLcGrid*) pg;
   free (grid->xg);
@@ -2694,7 +2696,7 @@ pp_def ('plAlloc2dGrid',
           grid->nx = nx;
           grid->ny = ny;
 
-          $grid() = (I32) grid;'
+          $grid() = ('.$int_ptr_type.') grid;'
         );
 
 
@@ -2703,7 +2705,7 @@ pp_def ('plAlloc2dGrid',
 pp_addxs (<<"EOC");
 void
 plFree2dGrid (pg)
-  int pg
+  long pg
 PPCODE:
   PLcGrid2* grid = (PLcGrid2*) pg;
   plFree2dGrid (grid->xg, grid->nx, grid->ny);
