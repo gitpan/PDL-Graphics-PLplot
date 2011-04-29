@@ -2,6 +2,7 @@
 
 use ExtUtils::MakeMaker;
 use Config;
+use File::Spec;
 
 # comment this block out for PDL internal version
 eval {
@@ -41,12 +42,14 @@ unlink ("OPTIONS!"); # remove file uses to communicate with plplot.pd
 my $libname = "libplplotd." . $Config{"so"};
 my $libname_static = "libplplotd.a";
 my $incname = "plplot.h";
+my $devnull = File::Spec->devnull(); # Portable null device.
 
 # require bad value support.  D. Hunt 10/20/2008
 unless ($PDL::Config{WITH_BADVAL}) {
   buildDummy ("Bad value support required!  (Turn on WITH_BADVAL in perldl.conf)");
   return if (caller); exit;
 }
+
 
 foreach my $libdir (
 		    $ENV{PLPLOT_LIBDIR},
@@ -133,6 +136,7 @@ my $libs;
 foreach my $l (
 	       "-L$plplot_lib_path -lplplotd -lX11",
 	       "-L$plplot_lib_path -lplplotd",
+             "-L$plplot_lib_path -lplplotd -lqsastime -lcsirocsa -lgdi32 -lcomdlg32",
 	       # New lib combinations should be added here!
 	       ) {
   if (trylink( '', '#include <plplot.h>', 'plinit();', "$l $plplot_include_path")) {
@@ -148,7 +152,7 @@ unless (defined($libs)) {
 }
 
 # Test if PLplot has plsmem, for in memory plotting
-eval { compileAndRun ("$plplot_include_path -L$plplot_lib_path -lplplotd", 0, <<'EOC'); 
+eval { compileAndRun ("$plplot_include_path $libs", 0, <<'EOC');
 #include <plplot.h>
 main () {  plsmem (0, 0, NULL); }
 EOC
@@ -163,7 +167,7 @@ if ($@) {
 }
 
 # Test if PLplot has plsvect, for in vector plotting
-eval { compileAndRun ("$plplot_include_path -L$plplot_lib_path -lplplotd", 0, <<'EOC'); 
+eval { compileAndRun ("$plplot_include_path $libs", 0, <<'EOC');
 #include <plplot.h>
 main () {  plsvect (NULL, NULL, 0, 0); }
 EOC
@@ -178,7 +182,7 @@ if ($@) {
 }
 
 # Test if PLplot has support for alpha transparency, found in versions 5.9.0 and higher
-eval { compileAndRun ("$plplot_include_path -L$plplot_lib_path -lplplotd",0,<<'EOC');
+eval { compileAndRun ("$plplot_include_path $libs",0,<<'EOC');
 #include <plplot.h>
 main () { c_plgcol0a(0, 0, 0, 0, NULL);}
 EOC
@@ -193,7 +197,7 @@ if ($@){
 }
 
 # Test if PLplot has 5 argument plpoly3 (5.1.1 and earlier) or 6 argument (5.2.0 and later)
-eval { compileAndRun ("$plplot_include_path -L$plplot_lib_path -lplplotd", 0, <<'EOC'); 
+eval { compileAndRun ("$plplot_include_path $libs", 0, <<'EOC');
 #include <plplot.h>
 main () {  plpoly3 (0, NULL, NULL, NULL, NULL); }
 EOC
@@ -217,12 +221,29 @@ main () { c_plseed(0);}
 EOC
 };
 if ($@){
-    print "\tc_plseed function not found, plplot versionn 5.9 or earlier!\n";
+    print "\tc_plseed function not found, plplot version 5.9 or earlier!\n";
     open (OPT,">>OPTIONS!");
     print OPT "NOPLSEED!\n";
     close OPT;
 } else {
     print "\tc_plseed function found, version 5.9 SVN or later!\n";
+}
+
+# Test if PLplot has the routine pllegend, found in plplot starting in late 2010
+eval { compileAndRun ("$plplot_include_path -L$plplot_lib_path -lplplotd",0,<<'EOC');
+#include <plplot.h>
+main () { c_pllegend(NULL,NULL,0,   0,   0.0, 0.0, 0.0, 0,   0,   0,
+                     0,   0,   0,   NULL,0.0, 0.0, 0.0, 0.0, NULL,NULL,
+		     NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);}
+EOC
+};
+if ($@){
+    print "\tc_pllegend function not found, plplot must be earlier than version 5.9.7 SVN.\n";
+    open (OPT,">>OPTIONS!");
+    print OPT "NOPLLEGEND!\n";
+    close OPT;
+} else {
+    print "\tc_pllegend function found, version 5.9.7 SVN (4/29/2011) or later!\n";
 }
 
 $PDL::Config{WITH_PLPLOT} = 1;
@@ -241,7 +262,7 @@ $hash{'VERSION_FROM'}   = 'plplot.pd';
 $hash{'LIBS'}      = [$libs];
 # add this to allow one to use the /ops/tools/lib plplot libs even when
 # another plplot is installed in /usr/local/lib. D. Hunt 6/4/2004
-$hash{'LDDLFLAGS'} = " -shared -L$plplot_lib_path -L/usr/local/lib "; 
+$hash{'LDDLFLAGS'} = " -shared -L$plplot_lib_path -L/usr/local/lib ";
 $hash{'INC'}      .= " $plplot_include_path";
 $hash{'clean'}     = {'FILES'  =>
 			  'PLplot.pm PLplot.xs PLplot.o PLplot.c PLplot.bs *.xfig temp* OPTIONS! Makefile.old'};
@@ -258,17 +279,17 @@ sub compileAndRun {
   my $flags = shift;
   my $run   = shift;
   my $code  = shift;
-  
+
   open (OUT, ">temp.c");
   print OUT $code;
   close OUT;
   unlink './temp'; # since we work out whether the compile succeeds by presence of this
   unlink './temp.exe'; # since we work out whether the compile succeeds by presence of this
-  
+
   my $cc = $Config{cc};
   my $ccflags = $Config{ccflags};
   # print "Trying: $cc $ccflags $flags temp.c -o temp\n";
-  system "$cc $ccflags $flags temp.c $flags -o temp > /dev/null 2>&1";
+  system "$cc $ccflags $flags temp.c $flags -o temp > $devnull 2>&1";
   unlink('./temp.c');
   die "Cannot compile test program: $code" unless (-e 'temp' or -e 'temp.exe');
   return unless ($run);

@@ -194,7 +194,7 @@ ok (-s "test11.$dev" > 0, "Colored symbol plot with key, via low level interface
 
 ok (sum(pdl(0.1, 0.85, 0.1, 0.9) - pdl($dev_xmin, $dev_xmax, $dev_ymin, $dev_ymax)) == 0, 
     "plgvpd call works correctly");
-ok (sum(abs(pdl(0, 10, 0, 100) - pdl($wld_xmin, $wld_xmax, $wld_ymin, $wld_ymax))) < 0.01,
+ok (abs(sum(pdl(-0.0001, 10.0001, -0.001, 100.001) - pdl($wld_xmin, $wld_xmax, $wld_ymin, $wld_ymax))) < 0.000001,
     "plgvpw call works correctly");
 
 # Test shade plotting (low level interface)
@@ -258,9 +258,9 @@ plend1();
 
 ok (-s "test14.$dev" > 0, "Histogram plotting, low level interface");
 
-# test histograms with higher level interface. 
+# test histograms with higher level interface.
 $pl = PDL::Graphics::PLplot->new (DEV => $dev, FILE => "test15.$dev");
-$pl->histogram ($x, $nbins, BOX => [$min, $max, 0, 100]); 
+$pl->histogram ($x, $nbins, BOX => [$min, $max, 0, 100]);
 $pl->close;
 ok (-s "test15.$dev" > 0, "Histogram plotting, high level interface");
 
@@ -271,17 +271,21 @@ plspage (0,0, 300,600, 0,0);
 plssub (1,2);
 plinit();
 pladv (1);
-plvpor(0.1, 0.9, 0.1, 0.9); 
+plvpor(0.1, 0.9, 0.1, 0.9);
 $x = random(100)*100;
 ($min, $max) = $x->minmax;
 $nbins = 15;
 $oldwin = 1; # dont call plenv
 plwind ($min, $max, 0, 100);
-plbox (0, 0, 0, 0, 'bcnst', 'bcnst');
+
+plplot_use_standard_argument_order(1);
+plbox ('bcnst', 0, 0, 'bcnst', 0, 0);
+plplot_use_standard_argument_order(0);
+
 plhist ($x, $min, $max, $nbins, $oldwin);
 
 pladv (2);
-plvpor(0.1, 0.9, 0.1, 0.9); 
+plvpor(0.1, 0.9, 0.1, 0.9);
 $x = random(200)*100;
 ($min, $max) = $x->minmax;
 $nbins = 15;
@@ -298,8 +302,8 @@ ok (-s "test16.$dev" > 0, "Multiple plots per page, low level interface");
 
 # test multiple pages per plot (high level interface)
 $pl = PDL::Graphics::PLplot->new (DEV => $dev, FILE => "test17.$dev", SUBPAGES => [1,2]);
-$pl->histogram ($x, $nbins, BOX => [$min, $max, 0, 100]); 
-$pl->histogram ($x, $nbins, BOX => [$min, $max, 0, 100], SUBPAGE => 2); 
+$pl->histogram ($x, $nbins, BOX => [$min, $max, 0, 100]);
+$pl->histogram ($x, $nbins, BOX => [$min, $max, 0, 100], SUBPAGE => 2);
 $pl->close;
 ok (-s "test17.$dev" > 0, "Multiple plots per page, high level interface");
 
@@ -332,8 +336,8 @@ $pl->close;
 ok (-s "test20.$dev" > 0, "Symbol plotting");
 
 # test label plotting in multiple subpage plots
-$pl = PDL::Graphics::PLplot->new(DEV => $dev, 
-				      FILE => "test21.$dev", 
+$pl = PDL::Graphics::PLplot->new(DEV => $dev,
+				      FILE => "test21.$dev",
 				      PAGESIZE => [500,900],
 				      SUBPAGES => [1,6]);
 my @colors = qw(GREEN BLUE RED BROWN BLACK YELLOW);
@@ -343,11 +347,11 @@ for my $i (0..5) {
   my $x  = sequence(100)*0.1;
   my $y  = sin($x);
 
-  $pl->xyplot($x, $y, 
+  $pl->xyplot($x, $y,
 	      COLOR => $colors[$i],
 	      SUBPAGE => $i+1,
 	      TITLE => "Title $i",
-	      XLAB => "1 to 10", 
+	      XLAB => "1 to 10",
 	      YLAB => "sin(x)");
 
 }
@@ -379,10 +383,16 @@ $pl->bargraph(\@labels, 100*random(scalar(@labels)), COLOR => 'GREEN', TEXTPOSIT
 $pl->close;
 ok (-s "test23b.$dev" > 0, "Bar graph part 4");
 
+$pl = PDL::Graphics::PLplot->new(DEV => $dev, FILE => "test23c.$dev");
+@labels = ((map { sprintf ("2001.%03d", $_) } (240..365)), (map { sprintf ("2002.%03d", $_) } (1..100)));
+$pl->bargraph(\@labels, 100*random(scalar(@labels)), UNFILLED_BARS => 1, COLOR => 'GREEN', TEXTPOSITION => ['tv', 0.5, 0.0, 0.0]);
+$pl->close;
+ok (-s "test23c.$dev" > 0, "Bar graph part 5, unfilled boxes");
+
 $pl = PDL::Graphics::PLplot->new(DEV => $dev, FILE => "test24.$dev");
 $x  = sequence(10);
 $y  = $x**2;
-$pl->xyplot($x, $y, PLOTTYPE => 'LINE', XERRORBAR => ones(10)*0.5, XTICK => 2,  NXSUB => 5, 
+$pl->xyplot($x, $y, PLOTTYPE => 'LINE', XERRORBAR => ones(10)*0.5, XTICK => 2,  NXSUB => 5,
                                         YERRORBAR => $y*0.1,       YTICK => 20, NYSUB => 10,
                                         MINTICKSIZE => 2, MAJTICKSIZE => 3);
 $pl->close;
