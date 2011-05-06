@@ -95,4 +95,5 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
                                                    plconfigtime, plctime, pltimefmt, plsesc
                  Removed deprecated functions: plarrows, c_plhls, c_plrgb, c_plrgb1
                  Fixed compiler warnings, did general clean-up.
-
+0.56 5/06/2011   Added test suite from plplot, plus comparison results from the C tests.
+                 Also added META_MERGE in Makefile.PL to try to get PAUSE/CPAN indexing working.
