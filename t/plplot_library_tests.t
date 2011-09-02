@@ -28,37 +28,43 @@ unless (@scripts) {
 
 my $maindir = '..' if (-s "../OPTIONS!");
    $maindir = '.'  if (-s "./OPTIONS!");
-open (OPT, "$maindir/OPTIONS!");
-my @opts = <OPT>;
-close OPT;
+my $plversion = do "$maindir/OPTIONS!";
 
-my $pllegend = 1;
-$pllegend = 0 if (grep /NOPLLEGEND!/, @opts);
-
-if ($pllegend) {
+if ($plversion->{'c_pllegend'}) {
   plan qw(no_plan);
 } else {
   plan skip_all => 'pllegend not found--plplot version not recent enough';
 }
 
-
-
 foreach my $plplot_test_script (@scripts) {
   my ($num) = ($plplot_test_script =~ /x(\d\d)\.pl/);
-  system "$plplot_test_script -dev svg -o x${num}p.svg -fam";
+  (my $c_code = $plplot_test_script) =~ s/\.pl/c\.c/;
+
+  # Compile C version
+  unlink ("a.out");
+  system "LD_RUN_PATH=\"$plversion->{'PLPLOT_LIB'}\" $plversion->{'C_COMPILE'} $c_code -o a.out";
+  ok ((($? == 0) && -s "a.out"), "$c_code compiled successfully");
+
+  # Run C version
+  system "a.out -dev svg -o x${num}c.svg -fam > /dev/null 2>&1";
+  ok ($? == 0, "C code $c_code ran successfully");
+
+  # Run perl version
+  system "$plplot_test_script -dev svg -o x${num}p.svg -fam > /dev/null 2>&1";
   ok ($? == 0, "Script $plplot_test_script ran successfully");
   my @output = glob ("x${num}p.svg*");
   foreach my $outfile (@output) {
     (my $reffile = $outfile) =~ s/x(\d\d)p/x${1}c/;
     my $perldata = do { local( @ARGV, $/ ) = $outfile; <> } ; # slurp!
-    my $refdata  = do { local( @ARGV, $/ ) = "$cwd/ref_svg_c_output/$reffile"; <> } ; # slurp!
-    ok ($perldata eq $refdata, "Output file $outfile matches reference C output");
+    my $refdata  = do { local( @ARGV, $/ ) = $reffile; <> } ; # slurp!
+    ok ($perldata eq $refdata, "Output file $outfile matches C output");
   }
 }
 
 
 # comment this out for testing!!!
-unlink glob ("x??p.svg.*");
+unlink glob ("$cwd/x???.svg.*");
+unlink "$cwd/a.out";
 
 # Local Variables:
 # mode: cperl

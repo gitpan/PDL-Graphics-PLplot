@@ -1,11 +1,7 @@
 use Config;
 
-use vars qw/$nomem $debug $plpoly3 $novect $v59_or_earlier $pllegend $noalpha/;
-
 my $ptrsize = length($Config{'byteorder'}); # 4 or 8 bytes
 my $int_ptr_type = ($ptrsize == 4) ? 'I32' : 'long';
-
-$debug = 0; # show generated pp_defs and other debug info
 
 # User can set this global variable to 1 if he wants
 # to use the normal plplot order of arguments, not the PP-required
@@ -13,32 +9,12 @@ $debug = 0; # show generated pp_defs and other debug info
 $PDL::Graphics::PLplot::standard_order = 0;
 
 # Read in options determined by Makefile.PL and written to the OPTIONS! file
-open (OPT, 'OPTIONS!');
-my @opts = <OPT>;
-close OPT;
-$nomem = 0;
-$nomem = 1 if (grep /NOMEM!/, @opts);
-
-$novect = 0;
-$novect = 1 if (grep /NOVECT!/, @opts);
-
-$plpoly3 = 5;
-$plpoly3 = 6 if (grep /PLPOLY3 = 6/, @opts);
-
-$noalpha = 0;
-$noalpha = 1 if (grep /NOALPHA!/, @opts);
-
-$v59_or_earlier = 0;
-$v59_or_earlier = 1 if (grep /NOPLSEED!/, @opts);
-
-$pllegend = 1;
-$pllegend = 0 if (grep /NOPLLEGEND!/, @opts);
-
+my $plversion = do 'OPTIONS!';
 pp_addpm({At => Top}, <<'EOD');
 
 our $VERSION;
 BEGIN {
-$VERSION = '0.56'
+$VERSION = '0.57'
 };
 
 =head1 NAME
@@ -2131,7 +2107,7 @@ GRID_NNAIDW
 
 EODEF
 
-create_low_level_constants (<<'EODEF') if ($pllegend);
+create_low_level_constants (<<'EODEF') if ($plversion->{'c_pllegend'});
 
 # Definitions for plslabelfunc
 
@@ -2285,6 +2261,7 @@ comparison with the C API and will be discussed below.
 EOPM
 
 pp_def ('pladv',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int page()',
 	OtherPars => '',
@@ -2293,6 +2270,7 @@ pp_def ('pladv',
 
 sub plaxes { plaxes_pp ($standard_order ? reorder ('plaxes', @_) : @_) } pp_add_exported('plaxes');
 pp_def ('plaxes_pp',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xzero();double yzero();double xtick();int nxsub();double ytick();int nysub()',
 	OtherPars => 'char *xopt;char *yopt',
@@ -2300,6 +2278,7 @@ pp_def ('plaxes_pp',
        );
 
 pp_def ('plbin',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int nbin();double x(dima);double y(dima);int center()',
 	OtherPars => '',
@@ -2317,6 +2296,7 @@ pp_add_exported('plbop');
 
 pp_addpm ('sub plbox { plbox_pp ($standard_order ? reorder ("plbox", @_) : @_) }'); pp_add_exported('plbox');
 pp_def ('plbox_pp',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xtick();int nxsub();double ytick();int nysub()',
 	OtherPars => 'char *xopt;char *yopt',
@@ -2325,6 +2305,7 @@ pp_def ('plbox_pp',
 
 pp_addpm ('sub plbox3 { plbox3_pp ($standard_order ? reorder ("plbox3", @_) : @_) }'); pp_add_exported('plbox3');
 pp_def ('plbox3_pp',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xtick();int nsubx();double ytick();int nsuby();double ztick();int nsubz()',
 	OtherPars => 'char *xopt;char *xlabel;char *yopt;char *ylabel;char *zopt;char *zlabel',
@@ -2341,6 +2322,7 @@ EOC
 pp_add_exported('plclear');
 
 pp_def ('plcol0',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int icolzero()',
 	OtherPars => '',
@@ -2348,6 +2330,7 @@ pp_def ('plcol0',
        );
 
 pp_def ('plcol1',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double colone()',
 	OtherPars => '',
@@ -2355,6 +2338,7 @@ pp_def ('plcol1',
        );
 
 pp_def ('plcpstrm',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int iplsr();int flags()',
 	OtherPars => '',
@@ -2362,6 +2346,7 @@ pp_def ('plcpstrm',
        );
 
 pp_def ('pldid2pc',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xmin(dima);double ymin(dima);double xmax(dima);double ymax(dima)',
 	OtherPars => '',
@@ -2369,6 +2354,7 @@ pp_def ('pldid2pc',
        );
 
 pp_def ('pldip2dc',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xmin(dima);double ymin(dima);double xmax(dima);double ymax(dima)',
 	OtherPars => '',
@@ -2394,6 +2380,7 @@ EOC
 pp_add_exported('plend1');
 
 pp_def ('plenv',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xmin();double xmax();double ymin();double ymax();int just();int axis()',
 	OtherPars => '',
@@ -2401,6 +2388,7 @@ pp_def ('plenv',
        );
 
 pp_def ('plenv0',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xmin();double xmax();double ymin();double ymax();int just();int axis()',
 	OtherPars => '',
@@ -2417,6 +2405,7 @@ EOC
 pp_add_exported('pleop');
 
 pp_def ('plerrx',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int n();double xmin(dima);double xmax(dima);double y(dima)',
 	OtherPars => '',
@@ -2424,6 +2413,7 @@ pp_def ('plerrx',
        );
 
 pp_def ('plerry',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int n();double x(dima);double ymin(dima);double ymax(dima)',
 	OtherPars => '',
@@ -2440,6 +2430,7 @@ EOC
 pp_add_exported('plfamadv');
 
 pp_def ('plfill3',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int n();double x(dima);double y(dima);double z(dima)',
 	OtherPars => '',
@@ -2456,6 +2447,7 @@ EOC
 pp_add_exported('plflush');
 
 pp_def ('plfont',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int ifont()',
 	OtherPars => '',
@@ -2463,6 +2455,7 @@ pp_def ('plfont',
        );
 
 pp_def ('plfontld',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int fnt()',
 	OtherPars => '',
@@ -2470,6 +2463,7 @@ pp_def ('plfontld',
        );
 
 pp_def ('plgchr',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double [o]p_def();double [o]p_ht()',
 	OtherPars => '',
@@ -2477,6 +2471,7 @@ pp_def ('plgchr',
        );
 
 pp_def ('plgcompression',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int [o]compression()',
 	OtherPars => '',
@@ -2484,6 +2479,7 @@ pp_def ('plgcompression',
        );
 
 pp_def ('plgdidev',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double [o]p_mar();double [o]p_aspect();double [o]p_jx();double [o]p_jy()',
 	OtherPars => '',
@@ -2491,6 +2487,7 @@ pp_def ('plgdidev',
        );
 
 pp_def ('plgdiori',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double [o]p_rot()',
 	OtherPars => '',
@@ -2498,6 +2495,7 @@ pp_def ('plgdiori',
        );
 
 pp_def ('plgdiplt',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double [o]p_xmin();double [o]p_ymin();double [o]p_xmax();double [o]p_ymax()',
 	OtherPars => '',
@@ -2505,6 +2503,7 @@ pp_def ('plgdiplt',
        );
 
 pp_def ('plgfam',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int [o]p_fam();int [o]p_num();int [o]p_bmax()',
 	OtherPars => '',
@@ -2512,6 +2511,7 @@ pp_def ('plgfam',
        );
 
 pp_def ('plglevel',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int [o]p_level()',
 	OtherPars => '',
@@ -2519,6 +2519,7 @@ pp_def ('plglevel',
        );
 
 pp_def ('plgpage',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double [o]p_xp();double [o]p_yp();int [o]p_xleng();int [o]p_yleng();int [o]p_xoff();int [o]p_yoff()',
 	OtherPars => '',
@@ -2535,6 +2536,7 @@ EOC
 pp_add_exported('plgra');
 
 pp_def ('plgspa',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double [o]xmin();double [o]xmax();double [o]ymin();double [o]ymax()',
 	OtherPars => '',
@@ -2542,6 +2544,7 @@ pp_def ('plgspa',
        );
 
 pp_def ('plgvpd',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double [o]p_xmin();double [o]p_xmax();double [o]p_ymin();double [o]p_ymax()',
 	OtherPars => '',
@@ -2549,6 +2552,7 @@ pp_def ('plgvpd',
        );
 
 pp_def ('plgvpw',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double [o]p_xmin();double [o]p_xmax();double [o]p_ymin();double [o]p_ymax()',
 	OtherPars => '',
@@ -2556,6 +2560,7 @@ pp_def ('plgvpw',
        );
 
 pp_def ('plgxax',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int [o]p_digmax();int [o]p_digits()',
 	OtherPars => '',
@@ -2563,6 +2568,7 @@ pp_def ('plgxax',
        );
 
 pp_def ('plgyax',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int [o]p_digmax();int [o]p_digits()',
 	OtherPars => '',
@@ -2570,6 +2576,7 @@ pp_def ('plgyax',
        );
 
 pp_def ('plgzax',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int [o]p_digmax();int [o]p_digits()',
 	OtherPars => '',
@@ -2586,6 +2593,7 @@ EOC
 pp_add_exported('plinit');
 
 pp_def ('pljoin',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xone();double yone();double xtwo();double ytwo()',
 	OtherPars => '',
@@ -2605,6 +2613,7 @@ EOC
 pp_add_exported('pllab');
 
 pp_def ('pllightsource',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double x();double y();double z()',
 	OtherPars => '',
@@ -2612,6 +2621,7 @@ pp_def ('pllightsource',
        );
 
 pp_def ('pllsty',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int lin()',
 	OtherPars => '',
@@ -2620,6 +2630,7 @@ pp_def ('pllsty',
 
 pp_addpm ('sub plmtex { plmtex_pp ($standard_order ? reorder ("plmtex", @_) : @_) }'); pp_add_exported('plmtex');
 pp_def ('plmtex_pp',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double disp();double pos();double just()',
 	OtherPars => 'char *side;char *text',
@@ -2628,6 +2639,7 @@ pp_def ('plmtex_pp',
 
 pp_addpm ('sub plmtex3 { plmtex3_pp ($standard_order ? reorder ("plmtex3", @_) : @_) }'); pp_add_exported('plmtex3');
 pp_def ('plmtex3_pp',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double disp();double pos();double just()',
 	OtherPars => 'char *side;char *text',
@@ -2635,6 +2647,7 @@ pp_def ('plmtex3_pp',
        );
 
 pp_def ('plpat',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int nlin();int inc(dima);int del(dima)',
 	OtherPars => '',
@@ -2642,6 +2655,7 @@ pp_def ('plpat',
        );
 
 pp_def ('plprec',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int setp();int prec()',
 	OtherPars => '',
@@ -2649,6 +2663,7 @@ pp_def ('plprec',
        );
 
 pp_def ('plpsty',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int patt()',
 	OtherPars => '',
@@ -2656,6 +2671,7 @@ pp_def ('plpsty',
        );
 
 pp_def ('plptex',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double x();double y();double dx();double dy();double just()',
 	OtherPars => 'char *text',
@@ -2663,6 +2679,7 @@ pp_def ('plptex',
        );
 
 pp_def ('plptex3',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double x();double y();double z();double dx();double dy();double dz();double sx();double sy();double sz();double just()',
 	OtherPars => 'char *text',
@@ -2679,6 +2696,7 @@ EOC
 pp_add_exported('plreplot');
 
 pp_def ('plschr',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double def();double scale()',
 	OtherPars => '',
@@ -2686,6 +2704,7 @@ pp_def ('plschr',
        );
 
 pp_def ('plscmap0n',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int ncolzero()',
 	OtherPars => '',
@@ -2693,6 +2712,7 @@ pp_def ('plscmap0n',
        );
 
 pp_def ('plscmap1n',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int ncolone()',
 	OtherPars => '',
@@ -2700,6 +2720,7 @@ pp_def ('plscmap1n',
        );
 
 pp_def ('plscol0',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int icolzero();int r();int g();int b()',
 	OtherPars => '',
@@ -2707,6 +2728,7 @@ pp_def ('plscol0',
        );
 
 pp_def ('plscolbg',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int r();int g();int b()',
 	OtherPars => '',
@@ -2714,6 +2736,7 @@ pp_def ('plscolbg',
        );
 
 pp_def ('plscolor',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int color()',
 	OtherPars => '',
@@ -2721,6 +2744,7 @@ pp_def ('plscolor',
        );
 
 pp_def ('plscompression',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int compression()',
 	OtherPars => '',
@@ -2738,6 +2762,7 @@ EOC
 pp_add_exported('plsdev');
 
 pp_def ('plsdidev',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double mar();double aspect();double jx();double jy()',
 	OtherPars => '',
@@ -2745,6 +2770,7 @@ pp_def ('plsdidev',
        );
 
 pp_def ('plsdimap',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int dimxmin();int dimxmax();int dimymin();int dimymax();double dimxpmm();double dimypmm()',
 	OtherPars => '',
@@ -2752,6 +2778,7 @@ pp_def ('plsdimap',
        );
 
 pp_def ('plsdiori',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double rot()',
 	OtherPars => '',
@@ -2759,6 +2786,7 @@ pp_def ('plsdiori',
        );
 
 pp_def ('plsdiplt',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xmin();double ymin();double xmax();double ymax()',
 	OtherPars => '',
@@ -2766,6 +2794,7 @@ pp_def ('plsdiplt',
        );
 
 pp_def ('plsdiplz',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xmin();double ymin();double xmax();double ymax()',
 	OtherPars => '',
@@ -2773,6 +2802,7 @@ pp_def ('plsdiplz',
        );
 
 pp_def ('pl_setcontlabelparam',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double offset();double size();double spacing();int active()',
 	OtherPars => '',
@@ -2780,6 +2810,7 @@ pp_def ('pl_setcontlabelparam',
        );
 
 pp_def ('pl_setcontlabelformat',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int lexp();int sigdig()',
 	OtherPars => '',
@@ -2787,6 +2818,7 @@ pp_def ('pl_setcontlabelformat',
        );
 
 pp_def ('plsfam',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int fam();int num();int bmax()',
 	OtherPars => '',
@@ -2804,6 +2836,7 @@ EOC
 pp_add_exported('plsfnam');
 
 pp_def ('plsmaj',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double def();double scale()',
 	OtherPars => '',
@@ -2811,6 +2844,7 @@ pp_def ('plsmaj',
        );
 
 pp_def ('plsmin',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double def();double scale()',
 	OtherPars => '',
@@ -2818,6 +2852,7 @@ pp_def ('plsmin',
        );
 
 pp_def ('plsori',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int ori()',
 	OtherPars => '',
@@ -2825,6 +2860,7 @@ pp_def ('plsori',
        );
 
 pp_def ('plspage',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xp();double yp();int xleng();int yleng();int xoff();int yoff()',
 	OtherPars => '',
@@ -2832,6 +2868,7 @@ pp_def ('plspage',
        );
 
 pp_def ('plspause',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int pause()',
 	OtherPars => '',
@@ -2839,6 +2876,7 @@ pp_def ('plspause',
        );
 
 pp_def ('plsstrm',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int strm()',
 	OtherPars => '',
@@ -2846,6 +2884,7 @@ pp_def ('plsstrm',
        );
 
 pp_def ('plssub',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int nx();int ny()',
 	OtherPars => '',
@@ -2853,6 +2892,7 @@ pp_def ('plssub',
        );
 
 pp_def ('plssym',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double def();double scale()',
 	OtherPars => '',
@@ -2860,6 +2900,7 @@ pp_def ('plssym',
        );
 
 pp_def ('plstar',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int nx();int ny()',
 	OtherPars => '',
@@ -2868,6 +2909,7 @@ pp_def ('plstar',
 
 pp_addpm ('sub plstart { plstart_pp ($standard_order ? reorder ("plstart", @_) : @_) }'); pp_add_exported('plstart');
 pp_def ('plstart_pp',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int nx();int ny()',
 	OtherPars => 'char *devname',
@@ -2875,6 +2917,7 @@ pp_def ('plstart_pp',
        );
 
 pp_def ('plstripa',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int id();int pen();double x();double y()',
 	OtherPars => '',
@@ -2882,6 +2925,7 @@ pp_def ('plstripa',
        );
 
 pp_def ('plstripd',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int id()',
 	OtherPars => '',
@@ -2889,6 +2933,7 @@ pp_def ('plstripd',
        );
 
 pp_def ('plsvpa',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xmin();double xmax();double ymin();double ymax()',
 	OtherPars => '',
@@ -2896,6 +2941,7 @@ pp_def ('plsvpa',
        );
 
 pp_def ('plsxax',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int digmax();int digits()',
 	OtherPars => '',
@@ -2903,6 +2949,7 @@ pp_def ('plsxax',
        );
 
 pp_def ('plsxwin',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int window_id()',
 	OtherPars => '',
@@ -2910,6 +2957,7 @@ pp_def ('plsxwin',
        );
 
 pp_def ('plsyax',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int digmax();int digits()',
 	OtherPars => '',
@@ -2917,6 +2965,7 @@ pp_def ('plsyax',
        );
 
 pp_def ('plszax',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int digmax();int digits()',
 	OtherPars => '',
@@ -2933,6 +2982,7 @@ EOC
 pp_add_exported('pltext');
 
 pp_def ('plvasp',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double aspect()',
 	OtherPars => '',
@@ -2940,6 +2990,7 @@ pp_def ('plvasp',
        );
 
 pp_def ('plvpas',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xmin();double xmax();double ymin();double ymax();double aspect()',
 	OtherPars => '',
@@ -2947,6 +2998,7 @@ pp_def ('plvpas',
        );
 
 pp_def ('plvpor',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xmin();double xmax();double ymin();double ymax()',
 	OtherPars => '',
@@ -2963,6 +3015,7 @@ EOC
 pp_add_exported('plvsta');
 
 pp_def ('plw3d',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double basex();double basey();double height();double xminzero();double xmaxzero();double yminzero();double ymaxzero();double zminzero();double zmaxzero();double alt();double az()',
 	OtherPars => '',
@@ -2970,6 +3023,7 @@ pp_def ('plw3d',
        );
 
 pp_def ('plwid',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int width()',
 	OtherPars => '',
@@ -2977,6 +3031,7 @@ pp_def ('plwid',
        );
 
 pp_def ('plwind',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double xmin();double xmax();double ymin();double ymax()',
 	OtherPars => '',
@@ -2995,6 +3050,7 @@ EOC
 pp_add_exported('plsetopt');
 
 pp_def ('plP_gpixmm',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'double p_x(dima);double p_y(dima)',
 	OtherPars => '',
@@ -3002,6 +3058,7 @@ pp_def ('plP_gpixmm',
        );
 
 pp_def ('plscolbga',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int r();int g();int b();double a()',
 	OtherPars => '',
@@ -3009,6 +3066,7 @@ pp_def ('plscolbga',
        );
 
 pp_def ('plscol0a',
+        NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int icolzero();int r();int g();int b();double a()',
 	OtherPars => '',
@@ -3056,6 +3114,7 @@ For example:
 EOD
 
 pp_def ('plline',
+        NoPthread => 1,
 	Pars => 'x(n); y(n)',
 	GenericTypes => [D],
 	HandleBad => 1,
@@ -3109,6 +3168,7 @@ EOD
 
 # C routine to draw points with a color scale
 pp_def ('plcolorpoints',
+        NoPthread => 1,
          Pars => 'x(n); y(n); z(n); int sym(); minz(); maxz()',
          GenericTypes => [D],
          HandleBad => 1,
@@ -3149,16 +3209,18 @@ pp_def ('plcolorpoints',
 
 
 pp_def ('plsmem',
+        NoPthread => 1,
 	     GenericTypes => [B],
              Pars => 'int maxx();int maxy();image(3,x,y)',
              Code => 'c_plsmem($maxx(),$maxy(),$P(image));'
-            ) unless ($nomem);
+            ) if ($plversion->{'plsmem'});
 
 #
 ## Box drawing primitive, taken from PLPLOT bar graph example
 #
 
 pp_def ('plfbox',
+        NoPthread => 1,
          Pars => 'xo(); yo()',
          GenericTypes => [D],
          Code => 'PLFLT x[4], y[4];
@@ -3177,6 +3239,7 @@ pp_def ('plfbox',
 ## Similar box drawing primitive, but without fill (just draw outline of box)
 #
 pp_def ('plunfbox',
+        NoPthread => 1,
          Pars => 'xo(); yo()',
          GenericTypes => [D],
          Code => 'PLFLT x[4], y[4];
@@ -3196,6 +3259,7 @@ pp_def ('plunfbox',
 #
 
 pp_def ('plParseOpts',
+        NoPthread => 1,
         GenericTypes => [D],
         Pars => 'int [o] retval()',
         OtherPars => 'SV* argv; int mode',
@@ -3214,7 +3278,8 @@ pp_def ('plParseOpts',
                 arr = (AV*) SvRV (sv);
                 newargc = argc = av_len (arr) + 1;
                 if (argc > 0) {
-                  args = calloc (argc , sizeof (char*));
+                  New(1, args, argc, char *);
+                  if(args == NULL) croak("Failed to allocate memory in plParseOpts");
 
                   for (i = 0; i < argc; i++) {
                           STRLEN len;
@@ -3229,7 +3294,7 @@ pp_def ('plParseOpts',
                   for (i = 0; i < argc; i++)
                           dummy = av_shift (arr); /* assign to dummy to suppress compile warning */
 
-                  free (args);
+                  Safefree (args);
                 }
         ',
 );
@@ -3237,6 +3302,7 @@ pp_def ('plParseOpts',
 # Plots a character at the specified points
 
 pp_def ('plpoin',
+        NoPthread => 1,
          Pars => 'x(n); y(n); int code()',
          GenericTypes => [D],
          Code => 'c_plpoin($SIZE(n),$P(x),$P(y),$code());'
@@ -3245,6 +3311,7 @@ pp_def ('plpoin',
 # Plots a character at the specified points in 3 space
 
 pp_def ('plpoin3',
+        NoPthread => 1,
          Pars => 'x(n); y(n); z(n); int code()',
          GenericTypes => [D],
          Code => 'c_plpoin3($SIZE(n),$P(x),$P(y),$P(z),$code());'
@@ -3253,6 +3320,7 @@ pp_def ('plpoin3',
 # Draw a line in 3 space
 
 pp_def ('plline3',
+        NoPthread => 1,
          Pars => 'x(n); y(n); z(n)',
          GenericTypes => [D],
          Code => 'c_plline3($SIZE(n),$P(x),$P(y),$P(z));'
@@ -3260,6 +3328,7 @@ pp_def ('plline3',
 
 # Draws a polygon in 3 space
 pp_def ('plpoly3',
+        NoPthread => 1,
          Pars => 'x(n); y(n); z(n); int draw(m); int ifcc()',
          GenericTypes => [D],
          Code => 'c_plpoly3($SIZE(n),$P(x),$P(y),$P(z),$P(draw),$ifcc());'
@@ -3267,6 +3336,7 @@ pp_def ('plpoly3',
 
 # Plot a histogram from unbinned data
 pp_def ('plhist',
+        NoPthread => 1,
          Pars => 'data(n); datmin(); datmax(); int nbin(); int oldwin()',
          GenericTypes => [D],
          Code => 'c_plhist($SIZE(n),$P(data),$datmin(),$datmax(),$nbin(),$oldwin());'
@@ -3274,6 +3344,7 @@ pp_def ('plhist',
 
 # Area fill
 pp_def ('plfill',
+        NoPthread => 1,
          Pars => 'x(n); y(n)',
          GenericTypes => [D],
          Code => 'c_plfill($SIZE(n),$P(x),$P(y));'
@@ -3281,13 +3352,15 @@ pp_def ('plfill',
 
 # Area fill with color gradient
 pp_def ('plgradient',
+        NoPthread => 1,
          Pars => 'x(n); y(n); angle();',
          GenericTypes => [D],
          Code => 'c_plgradient($SIZE(n),$P(x),$P(y),$angle());'
-        ) if ($pllegend);
+        ) if ($plversion->{'c_pllegend'});
 
 # Plots a symbol at the specified points
 pp_def ('plsym',
+        NoPthread => 1,
          Pars => 'x(n); y(n); int code()',
          GenericTypes => [D],
          Code => 'c_plsym($SIZE(n),$P(x),$P(y),$code());'
@@ -3295,6 +3368,7 @@ pp_def ('plsym',
 
 # Plot shaded 3-d surface plot
 pp_def ('plsurf3d',
+        NoPthread => 1,
          Pars => 'x(nx); y(ny); z(nx,ny); int opt(); clevel(nlevel);',
          GenericTypes => [D],
          Code => '
@@ -3315,6 +3389,7 @@ pp_def ('plsurf3d',
 # Set line style
 
 pp_def ('plstyl',
+        NoPthread => 1,
          Pars => 'int mark(nms); int space(nms)',
          GenericTypes => [D],
          Code => 'c_plstyl ($SIZE(nms), $P(mark), $P(space));'
@@ -3323,17 +3398,21 @@ pp_def ('plstyl',
 # PLplot standard random number generation.  Using this
 # helps to keep the demo plots identical.
 
-if (!$v59_or_earlier) {
+if ($plversion->{'c_plseed'}) {
+
   pp_def ('plseed',
+          NoPthread => 1,
           Pars => 'int seed()',
           Code => 'unsigned int useed = (unsigned int)$seed(); c_plseed(useed);'
         );
 
   pp_def ('plrandd',
+          NoPthread => 1,
           Pars => 'double [o]rand()',
           Code => '$rand() = c_plrandd();'
         );
-}
+
+} # $plversion->{'c_plseed'}
 
 # Plot contours
 
@@ -3367,6 +3446,7 @@ EOC
 # Allocates a PLcGrid object for use in pltr1
 
 pp_def ('plAllocGrid',
+        NoPthread => 1,
         Pars => 'double xg(nx); double yg(ny); int [o] grid()',
         GenericTypes => [D],
         Doc => 'FIXME: documentation here!',
@@ -3415,6 +3495,7 @@ pp_add_exported (plFreeGrid);
 # Allocates a PLcGrid2 object for use in pltr2
 
 pp_def ('plAlloc2dGrid',
+        NoPthread => 1,
         Pars => 'double xg(nx,ny); double yg(nx,ny); int [o] grid()',
         GenericTypes => [D],
         Doc => 'FIXME: documentation here!',
@@ -3613,7 +3694,7 @@ mapform_callback (PLINT n, PLFLT* x, PLFLT* y)
 }
 EOH
 
-pp_addhdr (<<'EOH') if ($pllegend);
+pp_addhdr (<<'EOH') if ($plversion->{'c_pllegend'});
 
 // Subroutines for adding transforms via plstransform
 static SV* xform_subroutine;
@@ -3702,6 +3783,7 @@ EOH
 # transformation functions are used.
 
 pp_def ('init_pltr',
+        NoPthread => 1,
          GenericTypes => [D],
          Pars => '',
          OtherPars => 'SV* p0; SV* p1; SV* p2;',
@@ -3719,6 +3801,7 @@ EOPM
 
 pp_addpm ('sub plmap { plmap_pp ($standard_order ? reorder ("plmap", @_) : @_) }'); pp_add_exported('plmap');
 pp_def ('plmap_pp',
+        NoPthread => 1,
         Pars => 'minlong(); maxlong(); minlat(); maxlat();', # 0-3
 	OtherPars => 'SV* mapform; char* type;', # 4,5
         GenericTypes => [D],
@@ -3735,23 +3818,26 @@ pp_def ('plmap_pp',
 
 # plot a string along a line
 pp_def ('plstring',
+        NoPthread => 1,
         Pars         => 'x(na); y(na);',
 	OtherPars    => 'char* string;',
         GenericTypes => [D],
         Code         => 'c_plstring($SIZE(na), $P(x), $P(y), $COMP(string));',
-       ) if ($pllegend);
+       ) if ($plversion->{'c_pllegend'});
 
 # plot a string along a 3D line
 pp_def ('plstring3',
+        NoPthread => 1,
         Pars         => 'x(na); y(na); z(na)',
 	OtherPars    => 'char* string;',
         GenericTypes => [D],
         Code         => 'c_plstring3($SIZE(na), $P(x), $P(y), $P(z), $COMP(string));',
-       ) if ($pllegend);
+       ) if ($plversion->{'c_pllegend'});
 
 # Plot the latitudes and longitudes on the background
 pp_addpm ('sub plmeridians { plmeridians_pp ($standard_order ? reorder ("plmeridians", @_) : @_) }'); pp_add_exported('plmeridians');
 pp_def ('plmeridians_pp',
+        NoPthread => 1,
         Pars => 'dlong(); dlat(); minlong(); maxlong(); minlat(); maxlat();', # 0-5
 	OtherPars => 'SV* mapform;', # 6
         GenericTypes => [D],
@@ -3770,6 +3856,7 @@ pp_def ('plmeridians_pp',
 
 pp_addpm ('sub plshades { plshades_pp ($standard_order ? reorder ("plshades", @_) : @_) }'); pp_add_exported('plshades');
 pp_def ('plshades_pp',
+        NoPthread => 1,
          Pars => 'z(x,y); xmin(); xmax(); ymin(); ymax();
                   clevel(l); int fill_width(); int cont_color();
                   int cont_width(); int rectangular()', # 0-9
@@ -3814,6 +3901,7 @@ pp_def ('plshades_pp',
        );
 
 pp_def ('plcont',
+        NoPthread => 1,
          GenericTypes => [D],
          Pars => 'f(nx,ny); int kx(); int lx(); int ky(); int ly(); '
                  . 'clevel(nlevel)', # 0-5
@@ -3855,6 +3943,7 @@ pp_def ('plcont',
 # Surface mesh
 
 pp_def ('plmesh',
+        NoPthread => 1,
          Pars => 'x(nx); y(ny); z(nx,ny); int opt()',
          GenericTypes => [D],
          Doc => 'FIXME: documentation here!',
@@ -3879,6 +3968,7 @@ pp_def ('plmesh',
 # Magnitude colored plot surface mesh with contour
 
 pp_def ('plmeshc',
+        NoPthread => 1,
          Pars => 'x(nx); y(ny); z(nx,ny); int opt(); clevel(nlevel)',
          GenericTypes => [D],
          Doc => 'FIXME: documentation here!',
@@ -3904,6 +3994,7 @@ pp_def ('plmeshc',
 # 3-d surface plot
 
 pp_def ('plot3d',
+        NoPthread => 1,
          Pars => 'x(nx); y(ny); z(nx,ny); int opt(); int side()',
          GenericTypes => [D],
          Doc => 'FIXME: documentation here!',
@@ -3929,6 +4020,7 @@ pp_def ('plot3d',
 # Plots a 3-d representation of the function z[x][y] with contour
 
 pp_def ('plot3dc',
+        NoPthread => 1,
          Pars => 'x(nx); y(ny); z(nx,ny); int opt(); clevel(nlevel)',
          GenericTypes => [D],
          Doc => 'FIXME: documentation here!',
@@ -3955,6 +4047,7 @@ pp_def ('plot3dc',
 # Set color map1 colors using a piece-wise linear relationship
 
 pp_def ('plscmap1l',
+        NoPthread => 1,
          Pars => 'int itype(); isty(n); coord1(n); coord2(n); coord3(n);'
 	         . ' int rev(nrev)',
          GenericTypes => [D],
@@ -3977,6 +4070,7 @@ pp_def ('plscmap1l',
 
 pp_addpm ('sub plshade1 { plshade1_pp ($standard_order ? reorder ("plshade1", @_) : @_) }'); pp_add_exported('plshade1');
 pp_def ('plshade1_pp',
+        NoPthread => 1,
          GenericTypes => [D],
          Pars => 'a(nx,ny); left(); right(); bottom(); top(); shade_min();'
                  . 'shade_max(); sh_cmap(); sh_color(); sh_width();'
@@ -3993,7 +4087,8 @@ pp_def ('plshade1_pp',
            size_x = $SIZE(nx);
            size_y = $SIZE(ny);
 
-           a = (PLFLT *) calloc (size_x * size_y, sizeof(PLFLT));
+           New(3, a, size_x * size_y, PLFLT);
+           if(a == NULL) croak("Failed to allocate memory in plshade1_pp");
 
            for (i = 0; i < size_x; i++)
              for (j = 0; j < size_y; j++)
@@ -4020,12 +4115,13 @@ pp_def ('plshade1_pp',
              $min_color(), $min_width(), $max_color(), $max_width(),
              plfill, $rectangular(), pltrcb, pltrdt);
 
-           free ((void *) a);'
+           Safefree (a);'
         );
 
 # Plot gray-level image
 
 pp_def ('plimage',
+         NoPthread => 1,
          GenericTypes => [D],
          Pars => 'idata(nx,ny); xmin(); xmax(); ymin(); ymax();'
 	         . 'zmin(); zmax(); Dxmin(); Dxmax(); Dymin(); Dymax();',
@@ -4052,9 +4148,10 @@ pp_def ('plimage',
 
 # Plot image with transformation
 
-if (!$v59_or_earlier) {
+if ($plversion->{'c_plimagefr'}) {
 
   pp_def ('plimagefr',
+          NoPthread => 1,
           GenericTypes => [D],
           #  plimagefr (idata, nx, ny, xmin, xmax, ymin, ymax, zmin, zmax, valuemin, valuemax, pltr, pltr_data);
           #  plimagefr ($img,          0,    $width, 0,  $height, 0,    0, $img_min, $img_max, \&pltr2, $grid);
@@ -4093,7 +4190,8 @@ if (!$v59_or_earlier) {
 
            plFree2dGrid (idata, size_x, size_y);'
 	);
-}
+
+} # $plversion->{'c_plimagefr'}
 
 # Set xor mode:
 # mode = 1-enter, 0-leave, status = 0 if not interactive device
@@ -4320,6 +4418,7 @@ pp_add_exported ('plgver');
 
 pp_addpm ('sub plstripc { plstripc_pp ($standard_order ? reorder ("plstripc", @_) : @_) }'); pp_add_exported('plstripc');
 pp_def ('plstripc_pp',
+        NoPthread => 1,
          GenericTypes => [D],
          Pars => 'xmin(); xmax(); xjump(); ymin(); ymax();'
 	         . 'xlpos(); ylpos(); int y_ascl(); int acc();'
@@ -4364,6 +4463,7 @@ pp_def ('plstripc_pp',
 #----------------------------------------------------------------------------
 
 pp_def ('plgriddata',
+        NoPthread => 1,
          GenericTypes => [D],
          Pars => 'x(npts); y(npts); z(npts); xg(nptsx); yg(nptsy);'
 	         . 'int type(); data(); [o] zg(nptsx,nptsy)',
@@ -4391,7 +4491,7 @@ pp_def ('plgriddata',
 
 #-----------------------------------------------------------------------------
 
-if ($pllegend) {
+if ($plversion->{'c_pllegend'}) {
 
 # Draw an arc
 pp_addpm (<<'EOPM');
@@ -4907,13 +5007,14 @@ PPCODE:
 EOC
 pp_add_exported ('plsesc');
 
-} # if $pllegend
+} # if $plversion->{'c_pllegend'}
 
-unless ($novect) {
+if ($plversion->{'plsvect'}) {
 
 # Vector field plots
 
   pp_def ('plvect',
+          NoPthread => 1,
 	  GenericTypes => [D],
 	  Pars => 'u(nx,ny); v(nx,ny); scale();',
 	  OtherPars => 'SV* pltr; SV* pltr_data;',
@@ -4954,12 +5055,15 @@ unless ($novect) {
 	 );
 
   pp_def ('plsvect',
+          NoPthread => 1,
 	  Pars => 'arrowx(npts); arrowy(npts); int fill()',
 	  GenericTypes => [D],
 	  Code => 'c_plsvect ($P(arrowx), $P(arrowy), $SIZE(npts), $fill());'
 	 );
+  }
 
   pp_def ('plhlsrgb',
+          NoPthread => 1,
 	  GenericTypes => [D],
 	  Pars => 'double h();double l();double s();double [o]p_r();double [o]p_g();double [o]p_b()',
 	  Code => 'c_plhlsrgb($h(),$l(),$s(),$P(p_r),$P(p_g),$P(p_b));'
@@ -4967,24 +5071,28 @@ unless ($novect) {
 
   # void c_plgcol0(PLINT icol0, PLINT *r, PLINT *g, PLINT *b);
   pp_def ('plgcol0',
+          NoPthread => 1,
 	  Pars => 'int icolzero(); int [o]r(); int [o]g(); int [o]b()',
 	  Code => 'c_plgcol0($icolzero(),$P(r),$P(g),$P(b));'
 	 );
 
   # void c_plgcolbg(PLINT *r, PLINT *g, PLINT *b);
   pp_def ('plgcolbg',
+          NoPthread => 1,
 	  Pars => 'int [o]r(); int [o]g(); int [o]b()',
 	  Code => 'c_plgcolbg($P(r),$P(g),$P(b));'
 	 );
 
   # void c_plscmap0(PLINT *r, PLINT *g, PLINT *b, PLINT ncol0);
   pp_def ('plscmap0',
+          NoPthread => 1,
 	  Pars => 'int r(n); int g(n); int b(n)',
 	  Code => 'c_plscmap0($P(r),$P(g),$P(b), $SIZE(n));'
 	 );
 
   # void c_plscmap1(PLINT *r, PLINT *g, PLINT *b, PLINT ncol1);
   pp_def ('plscmap1',
+          NoPthread => 1,
 	  Pars => 'int r(n); int g(n); int b(n)',
 	  Code => 'c_plscmap1($P(r),$P(g),$P(b), $SIZE(n));'
 	 );
@@ -4993,24 +5101,28 @@ unless ($novect) {
 
     # void c_plgcol0a(PLINT icol0, PLINT *r, PLINT *g, PLINT *b, PLFLT *a);
     pp_def ('plgcol0a',
+            NoPthread => 1,
 	    Pars => 'int icolzero(); int [o]r(); int [o]g(); int [o]b(); double [o]a()',
 	    Code => 'c_plgcol0a($icolzero(),$P(r),$P(g),$P(b),$P(a));'
 	   );
 
     # void c_plgcolbga(PLINT *r, PLINT *g, PLINT *b, PLFLT *a);
     pp_def ('plgcolbga',
+            NoPthread => 1,
 	    Pars => 'int [o]r(); int [o]g(); int [o]b(); double [o]a()',
 	    Code => 'c_plgcolbga($P(r),$P(g),$P(b),$P(a));'
 	   );
 
     # void c_plscmap0a(PLINT *r, PLINT *g, PLINT *b, PLFLT *a, PLINT ncol0);
     pp_def ('plscmap0a',
+            NoPthread => 1,
 	    Pars => 'int r(n); int g(n); int b(n); double a(n)',
 	    Code => 'c_plscmap0a($P(r),$P(g),$P(b),$P(a),$SIZE(n));'
 	   );
 
     # void c_plscmap1a(PLINT *r, PLINT *g, PLINT *b, PLFLT *a, PLINT ncol1);
     pp_def ('plscmap1a',
+            NoPthread => 1,
 	    Pars => 'int r(n); int g(n); int b(n); double a(n)',
 	    Code => 'c_plscmap1a($P(r),$P(g),$P(b),$P(a),$SIZE(n));'
 	   );
@@ -5018,6 +5130,7 @@ unless ($novect) {
     # Set color map1 colors using a piece-wise linear relationship, include alpha channel
 
     pp_def ('plscmap1la',
+            NoPthread => 1,
 	    Pars => 'int itype(); isty(n); coord1(n); coord2(n); coord3(n); coord4(n);'
 	    . ' int rev(nrev)',
 	    GenericTypes => [D],
@@ -5035,31 +5148,33 @@ unless ($novect) {
 	      c_plscmap1la ($itype(), $SIZE(n), $P(isty), $P(coord1),
 	                    $P(coord2), $P(coord3), $P(coord4), rev);'
 	   );
+    }
 
 
     #
     ## UNICODE font manipulation
     #
 
-    if (!$v59_or_earlier) {
+    if ($plversion->{'c_plsfont'}) {
 
       # plgfont(PLINT *p_family, PLINT *p_style, PLINT *p_weight);
       pp_def ('plgfont',
+              NoPthread => 1,
 	      Pars => 'int [o]p_family(); int [o]p_style(); int [o]p_weight();',
 	      Code => 'c_plgfont($P(p_family),$P(p_style),$P(p_weight));'
 	     );
 
       #  plsfont (PLINT family, PLINT style, PLINT weight);
       pp_def ('plsfont',
+              NoPthread => 1,
 	      Pars => 'int family(); int style(); int weight();',
 	      Code => 'c_plsfont($family(),$style(),$weight());'
 	     );
-    }
-
-
+    } # $plversion->{'c_plsfont'}
 
     #  plcalc_world (PLFLT rx, PLFLT ry, PLFLT *wx, PLFLT *wy, PLINT *window);
     pp_def ('plcalc_world',
+            NoPthread => 1,
 	    Pars => 'double rx(); double ry(); double [o]wx(); double [o]wy(); int [o]window()',
 	    Code => 'c_plcalc_world($rx(), $ry(), $P(wx), $P(wy), $P(window));'
 	   );
@@ -5088,10 +5203,6 @@ plsfci(fci)
         c_plsfci(fci);
 EOC
 pp_add_exported('', 'plsfci');
-
-  }
-
-}
 
 pp_addpm (<<'EOPM');
 
