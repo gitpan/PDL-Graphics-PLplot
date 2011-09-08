@@ -14,7 +14,7 @@ pp_addpm({At => Top}, <<'EOD');
 
 our $VERSION;
 BEGIN {
-$VERSION = '0.57'
+$VERSION = '0.59'
 };
 
 =head1 NAME
@@ -4844,6 +4844,8 @@ PPCODE:
 EOC
 pp_add_exported ('plspal1');
 
+} # if $plversion->{'c_pllegend'}
+
 #-----------------------------------------------------------------------------------------
 
 pp_addpm (<<'EOPM');
@@ -5006,8 +5008,6 @@ PPCODE:
 
 EOC
 pp_add_exported ('plsesc');
-
-} # if $plversion->{'c_pllegend'}
 
 if ($plversion->{'plsvect'}) {
 

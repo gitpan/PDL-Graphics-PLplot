@@ -103,4 +103,13 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
                  use of PLplot in a pthreads environment.
                  Also added the C test source code from plplot 5.9.8 to compile and run for the
                  plplot_library_tests test case.  This may not work on all platforms!
-                 
+
+0.58 9/6/2011    Build several functions if pllegend not found:
+                 plbtime
+                 plconfigtime
+                 plctime
+                 pltimefmt
+                 plsesc
+
+0.59 9/8/2011    Merge in Sysiphus's Windows compile update for the plplot library tests.
+                 Add -lm for Fedora as well.

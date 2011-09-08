@@ -1,17 +1,11 @@
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl test.pl'
 
-######################### We start with some black magic to print on failure.
-
-# Change 1..1 below to 1..last_test_to_print .
-# (It may become useful if the test is moved to ./t subdirectory.)
-
 use PDL;
 use PDL::Config;
 use PDL::Graphics::PLplot;
 use Test::More;
-
-######################### End of black magic.
+use File::Spec;
 
 # These tests are taken from the plplot distribution.  The reference results
 # are also from the plplot distribution--they are the results of running
@@ -42,15 +36,26 @@ foreach my $plplot_test_script (@scripts) {
 
   # Compile C version
   unlink ("a.out");
-  system "LD_RUN_PATH=\"$plversion->{'PLPLOT_LIB'}\" $plversion->{'C_COMPILE'} $c_code -o a.out";
+  if($^O =~ /MSWin32/i) { # A Windows system
+    my $cmd = $plversion->{'C_COMPILE'};
+    my $cc = $Config::Config{'cc'};
+    $cmd =~ s/\\/\//g; # Convert all backslashes to forward slashes
+    $cmd =~ s/\Q$cc\E/\Q$cc $c_code\E/; # Insert source file into the command
+    $cmd =~ s/\\//g;   # Remove all backskashes
+    system("$cmd -o a.out");
+  } else { # A UNIX system
+    system "LD_RUN_PATH=\"$plversion->{'PLPLOT_LIB'}\" $plversion->{'C_COMPILE'} $c_code -lm -o a.out";
+  }
   ok ((($? == 0) && -s "a.out"), "$c_code compiled successfully");
 
   # Run C version
-  system "a.out -dev svg -o x${num}c.svg -fam > /dev/null 2>&1";
+  my $devnull = File::Spec->devnull();
+  system "a.out -dev svg -o x${num}c.svg -fam > $devnull 2>&1";
   ok ($? == 0, "C code $c_code ran successfully");
 
   # Run perl version
-  system "$plplot_test_script -dev svg -o x${num}p.svg -fam > /dev/null 2>&1";
+  my $perlrun = $^O =~ /MSWin32/i ? 'perl -Mblib' : '';
+  system "$perlrun $plplot_test_script -dev svg -o x${num}p.svg -fam > $devnull 2>&1";
   ok ($? == 0, "Script $plplot_test_script ran successfully");
   my @output = glob ("x${num}p.svg*");
   foreach my $outfile (@output) {
