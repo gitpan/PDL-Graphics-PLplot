@@ -113,3 +113,5 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
 
 0.59 9/8/2011    Merge in Sysiphus's Windows compile update for the plplot library tests.
                  Add -lm for Fedora as well.
+
+0.60 9/8/2011    Add './' to compile step per Orion Poplawski.
