@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               PDL-Graphics-PLplot
-version:            0.60
+version:            0.61
 abstract:           ~
 author:  []
 license:            unknown
@@ -13,7 +13,7 @@ requires:  {}
 provides:
     PDL::Graphics::PLplot:
         file:     plplot.pd
-        version:  0.6
+        version:  0.61
 no_index:
     directory:
         - t

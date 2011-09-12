@@ -50,7 +50,8 @@ foreach my $plplot_test_script (@scripts) {
 
   # Run C version
   my $devnull = File::Spec->devnull();
-  system "./a.out -dev svg -o x${num}c.svg -fam > $devnull 2>&1";
+  my $dot_slash = $^O =~ /MSWin32/i ? '' : './';
+  system "${dot_slash}a.out -dev svg -o x${num}c.svg -fam > $devnull 2>&1";
   ok ($? == 0, "C code $c_code ran successfully");
 
   # Run perl version
