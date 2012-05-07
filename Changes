@@ -99,7 +99,7 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
                  Also added META_MERGE in Makefile.PL to try to get PAUSE/CPAN indexing working.
 
 0.57 8/30/2011   Cleaned up OPTIONS! processing from Makefile.PL to plplot.pd--now based on the approach
-                 Sisyphus.  Also merged in David Merten's 'NoPthread => 1' option to allow for
+                 by Sisyphus.  Also merged in David Merten's 'NoPthread => 1' option to allow for
                  use of PLplot in a pthreads environment.
                  Also added the C test source code from plplot 5.9.8 to compile and run for the
                  plplot_library_tests test case.  This may not work on all platforms!
@@ -117,5 +117,8 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
 0.60 9/8/2011    Add './' to compile step per Orion Poplawski.
 
 0.61 9/12/2011   Take away './' for Windows users per Sisyphus.
+
+0.62 5/7/2012    Add contour plotting to high level interface.
+                 See shadeplot ($z, $nsteps, PLOTTYPE => 'CONTOUR', CONTOURLABELS => 1)
 
 

@@ -14,7 +14,7 @@ pp_addpm({At => Top}, <<'EOD');
 
 our $VERSION;
 BEGIN {
-$VERSION = '0.61'
+$VERSION = '0.62'
 };
 
 =head1 NAME
@@ -210,6 +210,26 @@ Some pre-defined triples are included:
  $pl->xyplot ($x, $y, COLOR => 'YELLOW');
  $pl->xyplot ($x, $y, COLOR => [0,255,0]);
 
+=head3 CONTOURLABELS
+
+Control of labels for contour plots.
+
+Must either be 0 (turn off contour labels), 1 (turn on default contour labels)
+or a five element array:
+
+ offset:  Offset of label from contour line (if set to 0.0, labels are printed on the lines). Default value is 0.006.
+ size:    Font height for contour labels (normalized). Default value is 0.3.
+ spacing: Spacing parameter for contour labels. Default value is 0.1.
+ lexp:    If the contour numerical label is greater than 10^(lexp) or less than 10^(-lexp),
+          then the exponential format is used. Default value of lexp is 4.
+ sigdig:  Number of significant digits. Default value is 2";
+
+=for example
+
+ $pl->shadeplot ($z, $nsteps, BOX => [-1, 1, -1, 1], PLOTTYPE => 'CONTOUR', CONTOURLABELS => [0.004, 0.2, 0.2, 4, 2]);
+ $pl->shadeplot ($z, $nsteps, BOX => [-1, 1, -1, 1], PLOTTYPE => 'CONTOUR', CONTOURLABELS => 0); # turn off labels
+ $pl->shadeplot ($z, $nsteps, BOX => [-1, 1, -1, 1], PLOTTYPE => 'CONTOUR', CONTOURLABELS => 1); # use default labels
+
 =head3 LINEWIDTH
 
 Set the line width for plotting.  Values range from 1 to a device dependent maximum.
@@ -257,11 +277,15 @@ Load pre-defined color map 1 color ranges.  Currently, values include:
 
 =head3 PLOTTYPE
 
-Specify which type of XY plot is desired:
+Specify which type of XY or shade plot is desired:
 
   LINE       -- A line
   POINTS     -- A bunch of symbols
   LINEPOINTS -- both
+
+  or, for 'shadeplot':
+  CONTOUR    -- A contour plot of 2D data
+  SHADE      -- A shade plot of 2D data
 
 =head3 SUBPAGE
 
@@ -931,6 +955,29 @@ sub cc2t { [map {hex} split ' ', shift] }
      plscol0 ($self->{CURRENT_COLOR_IDX}, @$color);
    },
 
+   # Contour plot label parameters (see setcontlabelparam and setcontlabelformat)
+   CONTOURLABELS => sub { my $self  = shift;
+                          my $parms = shift; # [offset, size, spacing, lexp, sigdig], or 0 (deactivate) or 1 (activate)
+                          my $defaults = [0.006, 0.3, 0.1, 4, 2];
+                          if ( (ref($parms) =~ /ARRAY/) && (@$parms == 5) ) {
+                            $self->{CONTOURLABELS} = $parms;
+                          } elsif ($parms == 0) {
+                            $self->{CONTOURLABELS} = 0;
+                          } elsif ($parms == 1) {
+                            $self->{CONTOURLABELS} = $defaults;
+                          } else {
+                            die
+"Illegal contour label parameters:  Must either be 0 (turn off contour labels), 1 (turn on default contour labels)
+ or a five element array:
+ offset:  Offset of label from contour line (if set to 0.0, labels are printed on the lines). Default value is 0.006.
+ size:    Font height for contour labels (normalized). Default value is 0.3.
+ spacing: Spacing parameter for contour labels. Default value is 0.1.
+ lexp:    If the contour numerical label is greater than 10^(lexp) or less than 10^(-lexp),
+          then the exponential format is used. Default value of lexp is 4.
+ sigdig:  Number of significant digits. Default value is 2";
+                          }
+   },
+
    # set output device type
    DEV        => sub { my $self = shift;
                        my $dev  = shift;
@@ -1072,12 +1119,12 @@ sub cc2t { [map {hex} split ' ', shift] }
    },
 
    PLOTTYPE =>
-   # specify plot type (LINE, POINTS, LINEPOINTS)
+   # specify plot type (LINE, POINTS, LINEPOINTS, CONTOUR, SHADE)
    sub {
      my $self = shift;
      my $val  = shift;
 
-     my %legal = (LINE => 1, POINTS => 1, LINEPOINTS => 1);
+     my %legal = (LINE => 1, POINTS => 1, LINEPOINTS => 1, CONTOUR => 1, SHADE => 1);
      if ($legal{$val}) {
        $self->{PLOTTYPE} = $val;
      } else {
@@ -1793,10 +1840,37 @@ sub shadeplot {
 
   my $grid = plAllocGrid ($xmap, $ymap);
 
-  plshades($z, @{$self->{BOX}}, $clevel, $fill_width,
-           $cont_color, $cont_width, $rectangular,
-	   0, \&pltr1, $grid);
+  # Choose shade plot or contour plot
+  if (!defined($self->{PLOTTYPE}) || ($self->{PLOTTYPE} eq 'SHADE') ) {
 
+    plshades($z, @{$self->{BOX}}, $clevel, $fill_width,
+             $cont_color, $cont_width, $rectangular,
+	     0, \&pltr1, $grid);
+
+  } elsif ($self->{PLOTTYPE} eq 'CONTOUR') {
+
+    if (defined($self->{CONTOURLABELS}) && $self->{CONTOURLABELS}) {
+      my ($offset, $size, $spacing, $lexp, $sigdig) = @{$self->{CONTOURLABELS}};
+      pl_setcontlabelparam ($offset, $size, $spacing, 1); # 1 = activate
+      pl_setcontlabelformat ($lexp, $sigdig);
+    } else { # == 0, set labels off
+      pl_setcontlabelparam (0.006, 0.3, 0.1, 0); # 0 = deactivate
+    }
+
+    # set the color according to the color specified in the object
+    # (we don't do this as an option, because then the frame might
+    # get the color requested for the line/points
+    plcol0  ($self->{CURRENT_COLOR_IDX});
+
+    # set line style for plot only (not box)
+    pllsty ($self->{LINESTYLE});
+
+    # set line width for plot only (not box)
+    plwid  ($self->{LINEWIDTH});
+
+    plcont ($z, 1, $nx, 1, $ny, $clevel, \&pltr1, $grid);
+
+  }
   plFreeGrid ($grid);
 
   # Flush the PLplot stream.

@@ -238,6 +238,12 @@ $pl->colorkey ($z, 'v', VIEWPORT => [0.93, 0.96, 0.15, 0.85]);
 $pl->close;
 ok (-s "test13.$dev" > 0, "3D color plot, high level interface");
 
+# test contour plots with higher level interface. 
+$pl = PDL::Graphics::PLplot->new (DEV => $dev, FILE => "test13a.$dev");
+$pl->shadeplot ($z, $nsteps, BOX => [-1, 1, -1, 1], PLOTTYPE => 'CONTOUR', CONTOURLABELS => 1);
+$pl->close;
+ok (-s "test13a.$dev" > 0, "3D contour plot, high level interface");
+
 # Test histogram plotting (low level interface)
 plsdev ($dev);
 plsfnam ("test14.$dev");
