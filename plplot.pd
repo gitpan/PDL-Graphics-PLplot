@@ -14,7 +14,7 @@ pp_addpm({At => Top}, <<'EOD');
 
 our $VERSION;
 BEGIN {
-$VERSION = '0.62'
+$VERSION = '0.65'
 };
 
 =head1 NAME
@@ -229,6 +229,53 @@ or a five element array:
  $pl->shadeplot ($z, $nsteps, BOX => [-1, 1, -1, 1], PLOTTYPE => 'CONTOUR', CONTOURLABELS => [0.004, 0.2, 0.2, 4, 2]);
  $pl->shadeplot ($z, $nsteps, BOX => [-1, 1, -1, 1], PLOTTYPE => 'CONTOUR', CONTOURLABELS => 0); # turn off labels
  $pl->shadeplot ($z, $nsteps, BOX => [-1, 1, -1, 1], PLOTTYPE => 'CONTOUR', CONTOURLABELS => 1); # use default labels
+
+=head3 GRIDMAP
+
+Set a user-defined grid map.  This is an X and Y vector that
+tells what are the world coordinates for each pixel in $z
+It is used in 'shadeplot' for non-standard mappings between the
+input 2D surface to plot and the world coordinates.  For example
+if your surface does not completely fill up the plotting window.
+
+=for example
+
+ my $z = $surface; # 2D PDL to plot (generated elsewhere)
+ my $nlevels = 20;
+ my ($nx, $ny) = $z->dims;
+ my @zbounds = ($minx, $maxx, $miny, $maxy);
+
+ # Map X coords linearly to X range, Y coords linearly to Y range
+ my $xmap = ((sequence($nx)*(($zbounds[1] - $zbounds[0])/($nx - 1))) + $zbounds[0]);
+ my $ymap = ((sequence($ny)*(($zbounds[3] - $zbounds[2])/($ny - 1))) + $zbounds[2]);
+ $pl->shadeplot ($z, $nlevels, PALETTE => 'GREENRED', GRIDMAP => [$xmap, $ymap]);
+
+=head3 GRIDMAP2
+
+Set a user-defined two dimensional grid map.  These are 2D X and Y matrices that
+tell what are the world coordinates for each pixel in $z
+It is used in 'shadeplot' for non-standard mappings between the
+input 2D surface to plot and the world coordinates, for example
+irregular grids like polar projections.
+
+=for example
+
+ my $r_pts     = 40;
+ my $theta_pts = 40;
+ my $pi        = 4*atan2(1,1);
+ my $nlevels   = 20;
+
+ my $r     = ((sequence ($r_pts)) / ($r_pts - 1))->dummy (1, $theta_pts);
+ my $z     = $r;  # or any other 2D surface to plot...
+ my $theta = ((2 * $pi / ($theta_pts - 2)) * sequence ($theta_pts))->dummy (0, $r_pts);
+ my $xmap  = $r * cos ($theta);
+ my $ymap  = $r * sin ($theta);
+
+ $pl->shadeplot ($z, $nlevels, PLOTTYPE => 'CONTOUR',
+                               JUST     => 1,
+                               BOX      => [-1,1,-1,1],
+                               PALETTE  => 'GREENRED',
+                               GRIDMAP2 => [$xmap, $ymap]);
 
 =head3 LINEWIDTH
 
@@ -1006,6 +1053,32 @@ sub cc2t { [map {hex} split ' ', shift] }
      plscol0 (1, @$color);
    },
 
+   GRIDMAP => sub {
+     # Use a user-defined grid map if requested.  This is an X and Y vector that
+     # tells what are the world coordinates for each pixel in $z
+     # It is used in 'shadeplot'.
+     my $self = shift;
+     my $map = shift;
+     die "GRIDMAP must be an array reference"            if (ref($map) !~ /ARRAY/);
+     die "GRIDMAP must be a two element array reference" if (@$map != 2);
+     die "GRIDMAP must contain two PDLs"                 if ( (ref($$map[0]) !~ /PDL/) || (ref($$map[1]) !~ /PDL/) );
+     die "GRIDMAP must contain two 1D PDLs"              if ( ($$map[0]->dims != 1) || ($$map[1]->dims != 1) );
+     $self->{GRIDMAP} = $map;
+   },
+
+   GRIDMAP2 => sub {
+     # Use a user-defined grid map if requested.  These are an X and Y matrices that
+     # tells what are the world coordinates for each pixel in $z
+     # They are used in 'shadeplot'.
+     my $self = shift;
+     my $map = shift;
+     die "GRIDMAP2 must be an array reference"            if (ref($map) !~ /ARRAY/);
+     die "GRIDMAP2 must be a two element array reference" if (@$map != 2);
+     die "GRIDMAP2 must contain two PDLs"                 if ( (ref($$map[0]) !~ /PDL/) || (ref($$map[1]) !~ /PDL/) );
+     die "GRIDMAP2 must contain two 2D PDLs"              if ( ($$map[0]->dims != 2) || ($$map[1]->dims != 2) );
+     $self->{GRIDMAP2} = $map;
+   },
+
    # Set flag for equal scale axes
    JUST => sub {
      my $self  = shift;
@@ -1532,7 +1605,7 @@ sub xyplot {
   pllsty ($self->{LINESTYLE});
 
   # set line width for plot only (not box)
-  plwid  ($self->{LINEWIDTH});
+  plwidth  ($self->{LINEWIDTH});
 
   # Plot lines if requested
   if  ($self->{PLOTTYPE} =~ /LINE/) {
@@ -1540,7 +1613,7 @@ sub xyplot {
   }
 
   # set line width back
-  plwid  (0);
+  plwidth  (0);
 
   # plot points if requested
   if ($self->{PLOTTYPE} =~ /POINTS/) {
@@ -1834,20 +1907,29 @@ sub shadeplot {
 
   my $rectangular = 1; # only false for non-linear coord mapping (not done yet in perl)
 
-  # map X coords linearly to X range, Y coords linearly to Y range
-  my $xmap = ((PDL->sequence($nx)*(($self->{BOX}[1] - $self->{BOX}[0])/($nx - 1))) + $self->{BOX}[0]);
-  my $ymap = ((PDL->sequence($ny)*(($self->{BOX}[3] - $self->{BOX}[2])/($ny - 1))) + $self->{BOX}[2]);
-
-  my $grid = plAllocGrid ($xmap, $ymap);
+  # Use a user-defined grid map if requested.  This is an X and Y vector that
+  # tells what are the world coordinates for each pixel in $z
+  # It is also possible to specify a 2D mapping for non-linear transforms.  This is specified
+  # in GRIDMAP2.
+  my ($xmap, $ymap, $grid, $mapping_function);
+  if (exists($self->{GRIDMAP})) {
+    ($xmap, $ymap) = @{$self->{GRIDMAP}};
+    $grid = plAllocGrid ($xmap, $ymap);
+    $mapping_function = \&pltr1;
+  } elsif (exists($self->{GRIDMAP2})) {
+    ($xmap, $ymap) = @{$self->{GRIDMAP2}};
+    $grid = plAlloc2dGrid ($xmap, $ymap);
+    $mapping_function = \&pltr2;
+  } else {
+    # map X coords linearly to X range, Y coords linearly to Y range
+    $xmap = ((PDL->sequence($nx)*(($self->{BOX}[1] - $self->{BOX}[0])/($nx - 1))) + $self->{BOX}[0]);
+    $ymap = ((PDL->sequence($ny)*(($self->{BOX}[3] - $self->{BOX}[2])/($ny - 1))) + $self->{BOX}[2]);
+    $grid = plAllocGrid ($xmap, $ymap);
+    $mapping_function = \&pltr1;
+  }
 
   # Choose shade plot or contour plot
-  if (!defined($self->{PLOTTYPE}) || ($self->{PLOTTYPE} eq 'SHADE') ) {
-
-    plshades($z, @{$self->{BOX}}, $clevel, $fill_width,
-             $cont_color, $cont_width, $rectangular,
-	     0, \&pltr1, $grid);
-
-  } elsif ($self->{PLOTTYPE} eq 'CONTOUR') {
+  if (defined($self->{PLOTTYPE}) && ($self->{PLOTTYPE} eq 'CONTOUR') ) {
 
     if (defined($self->{CONTOURLABELS}) && $self->{CONTOURLABELS}) {
       my ($offset, $size, $spacing, $lexp, $sigdig) = @{$self->{CONTOURLABELS}};
@@ -1857,21 +1939,21 @@ sub shadeplot {
       pl_setcontlabelparam (0.006, 0.3, 0.1, 0); # 0 = deactivate
     }
 
-    # set the color according to the color specified in the object
-    # (we don't do this as an option, because then the frame might
-    # get the color requested for the line/points
-    plcol0  ($self->{CURRENT_COLOR_IDX});
+    plcont ($z, 1, $nx-1, 1, $ny-1, $clevel, $mapping_function, $grid);
 
-    # set line style for plot only (not box)
-    pllsty ($self->{LINESTYLE});
+  } else {
 
-    # set line width for plot only (not box)
-    plwid  ($self->{LINEWIDTH});
-
-    plcont ($z, 1, $nx, 1, $ny, $clevel, \&pltr1, $grid);
+    plshades($z, @{$self->{BOX}}, $clevel, $fill_width,
+             $cont_color, $cont_width, $rectangular,
+	     0, $mapping_function, $grid);
 
   }
-  plFreeGrid ($grid);
+
+  if (exists($self->{GRIDMAP2})) {
+    plFree2dGrid ($grid);
+  } else {
+    plFreeGrid ($grid);
+  }
 
   # Flush the PLplot stream.
   plflush();
@@ -1912,7 +1994,7 @@ sub histogram {
   pllsty ($self->{LINESTYLE});
 
   # set line width for plot only (not box)
-  plwid  ($self->{LINEWIDTH});
+  plwidth  ($self->{LINEWIDTH});
 
   # set color for histograms
   plcol0  ($self->{CURRENT_COLOR_IDX});
@@ -1920,7 +2002,7 @@ sub histogram {
   plhist ($x, $min, $max, $nbins, 1);  # '1' is oldbins parm:  dont call plenv!
 
   # set line width back
-  plwid  (0);
+  plwidth  (0);
 
   # Flush the PLplot stream.
   plflush();
@@ -1985,7 +2067,7 @@ sub bargraph {
   pllsty ($self->{LINESTYLE});
 
   # set line width for plot only (not box)
-  plwid  ($self->{LINEWIDTH});
+  plwidth  ($self->{LINEWIDTH});
 
   # draw bars
   if ($self->{UNFILLED_BARS}) {
@@ -1995,7 +2077,7 @@ sub bargraph {
   }
 
   # set line width back
-  plwid  (0);
+  plwidth  (0);
 
   # set char size back
   plschr (0, $self->{CHARSIZE});
@@ -3096,13 +3178,31 @@ pp_def ('plw3d',
 	Code => 'c_plw3d($basex(),$basey(),$height(),$xminzero(),$xmaxzero(),$yminzero(),$ymaxzero(),$zminzero(),$zmaxzero(),$alt(),$az());'
        );
 
+# Starting in plplot 5.9.10, plwid(int) is replaced by plwidth(double)
+if ($plversion->{'c_plwidth'}) {
+pp_def ('plwidth',
+        NoPthread => 1,
+	GenericTypes => [D],
+	Pars => 'int width()',
+	OtherPars => '',
+	Code => 'plwidth($width());'
+       );
+} else {
 pp_def ('plwid',
         NoPthread => 1,
 	GenericTypes => [D],
 	Pars => 'int width()',
 	OtherPars => '',
-	Code => 'c_plwid($width());'
+	Code => 'plwid($width());'
        );
+pp_def ('plwidth',
+        NoPthread => 1,
+	GenericTypes => [D],
+	Pars => 'int width()',
+	OtherPars => '',
+	Code => 'plwid($width());'
+       );
+}
 
 pp_def ('plwind',
         NoPthread => 1,
@@ -3705,7 +3805,7 @@ defined_callback (PLFLT x, PLFLT y)
 
 static SV* mapform_subroutine;
 
-static void default_magic (pdl *p, int pa) { p->data = 0; }
+static void default_magic (pdl *p, size_t pa) { p->data = 0; }
 
 static void
 mapform_callback (PLINT n, PLFLT* x, PLFLT* y)
@@ -4710,6 +4810,10 @@ See the PLplot manual for more details.
 =cut
 EOPM
 
+# from plplot 5.9.9 to 5.9.10 the type of line_widths and box_line_widths changed from int to double.
+# Presence of 'c_plwidth' indicates that this is plplot 5.9.10
+my $width_type = $plversion->{'c_plwidth'} ? 'double' : 'int';
+
 pp_addxs (<<"EOC");
 void
 pllegend(opt, position, x, y, plot_width, bg_color, bb_color, bb_style, nrow, ncolumn, nlegend, opt_array_rv, text_offset, text_scale, text_spacing, text_justification, text_colors_rv, text_rv, box_colors_rv, box_patterns_rv, box_scales_rv, box_line_widths_rv, line_colors_rv, line_styles_rv, line_widths_rv, symbol_colors_rv, symbol_scales_rv, symbol_numbers_rv, symbols_rv)
@@ -4752,10 +4856,10 @@ PPCODE:
   int box_colors[nlegend];
   int box_patterns[nlegend];
   double box_scales[nlegend];
-  int box_line_widths[nlegend];
+  $width_type box_line_widths[nlegend];
   int line_colors[nlegend];
   int line_styles[nlegend];
-  int line_widths[nlegend];
+  $width_type line_widths[nlegend];
   int symbol_colors[nlegend];
   double symbol_scales[nlegend];
   int symbol_numbers[nlegend];
@@ -4788,11 +4892,11 @@ PPCODE:
         box_scales[i] = (double)SvNV(*elem);
       }
     }
-    box_line_widths[i] = 0;
+    box_line_widths[i] = 0.0;
     if (SvROK(box_line_widths_rv)) {
       elem = av_fetch((AV *)SvRV(box_line_widths_rv), i, 0); 
       if (elem && SvOK(*elem)) {
-        box_line_widths[i] = (int)SvIV(*elem);
+        box_line_widths[i] = (double)SvIV(*elem);
       }
     }
     line_colors[i] = 0;
@@ -4811,11 +4915,11 @@ PPCODE:
       }
     }
 
-    line_widths[i] = 0;
+    line_widths[i] = 0.0;
     if (SvROK(line_widths_rv)) {
       elem = av_fetch((AV *)SvRV(line_widths_rv), i, 0); 
       if (elem && SvOK(*elem)) {
-        line_widths[i] = (int)SvIV(*elem);
+        line_widths[i] = (double)SvIV(*elem);
       }
     }
 

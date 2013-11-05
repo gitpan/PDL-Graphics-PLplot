@@ -1,4 +1,4 @@
-// $Id: x15c.c 11289 2010-10-29 20:44:17Z airwin $
+// $Id: x15c.c 12319 2013-05-01 21:51:24Z airwin $
 //
 //      Shade plot demo.
 //
@@ -20,7 +20,7 @@ static void     plot1( void );
 static void     plot2( void );
 static void     plot3( void );
 static void     f2mnmx( PLFLT *, PLINT, PLINT, PLFLT *, PLFLT * );
-static void     cmap1_init1( void );
+//static void     cmap1_init1( void );
 static void     cmap1_init2( void );
 
 
@@ -80,40 +80,40 @@ main( int argc, const char *argv[] )
 // Initializes color map 1 in HLS space.
 //--------------------------------------------------------------------------
 
-static void
-cmap1_init1( void )
-{
-    PLFLT i[4], h[4], l[4], s[4];
-
-    i[0] = 0;           // left boundary
-    i[1] = 0.45;        // just before center
-    i[2] = 0.55;        // just after center
-    i[3] = 1;           // right boundary
-
-    h[0] = 260;         // hue -- low: blue-violet
-    h[1] = 260;         // only change as we go over vertex
-    h[2] = 20;          // hue -- high: red
-    h[3] = 20;          // keep fixed
-
-#if 1
-    l[0] = 0.5;         // lightness -- low
-    l[1] = 0.0;         // lightness -- center
-    l[2] = 0.0;         // lightness -- center
-    l[3] = 0.5;         // lightness -- high
-#else
-    plscolbg( 255, 255, 255 );
-    l[0] = 0.5;         // lightness -- low
-    l[1] = 1.0;         // lightness -- center
-    l[2] = 1.0;         // lightness -- center
-    l[3] = 0.5;         // lightness -- high
-#endif
-    s[0] = 1;           // maximum saturation
-    s[1] = 1;           // maximum saturation
-    s[2] = 1;           // maximum saturation
-    s[3] = 1;           // maximum saturation
-
-    c_plscmap1l( 0, 4, i, h, l, s, NULL );
-}
+//static void
+//cmap1_init1( void )
+//{
+//    PLFLT i[4], h[4], l[4], s[4];
+//
+//    i[0] = 0;           // left boundary
+//    i[1] = 0.45;        // just before center
+//    i[2] = 0.55;        // just after center
+//    i[3] = 1;           // right boundary
+//
+//    h[0] = 260;         // hue -- low: blue-violet
+//    h[1] = 260;         // only change as we go over vertex
+//    h[2] = 20;          // hue -- high: red
+//    h[3] = 20;          // keep fixed
+//
+//#if 1
+//    l[0] = 0.5;         // lightness -- low
+//    l[1] = 0.0;         // lightness -- center
+//    l[2] = 0.0;         // lightness -- center
+//    l[3] = 0.5;         // lightness -- high
+//#else
+//    plscolbg( 255, 255, 255 );
+//    l[0] = 0.5;         // lightness -- low
+//    l[1] = 1.0;         // lightness -- center
+//    l[2] = 1.0;         // lightness -- center
+//    l[3] = 0.5;         // lightness -- high
+//#endif
+//    s[0] = 1;           // maximum saturation
+//    s[1] = 1;           // maximum saturation
+//    s[2] = 1;           // maximum saturation
+//    s[3] = 1;           // maximum saturation
+//
+//    c_plscmap1l( 0, 4, i, h, l, s, NULL );
+//}
 
 //--------------------------------------------------------------------------
 // cmap1_init2
@@ -166,8 +166,9 @@ static void
 plot1( void )
 {
     PLFLT shade_min, shade_max, sh_color;
-    PLINT sh_cmap   = 0, sh_width;
-    PLINT min_color = 0, min_width = 0, max_color = 0, max_width = 0;
+    PLINT sh_cmap   = 0;
+    PLINT min_color = 0, max_color = 0;
+    PLFLT sh_width, min_width = 0., max_width = 0.;
 
     pladv( 0 );
     plvpor( 0.1, 0.9, 0.1, 0.9 );
@@ -178,11 +179,11 @@ plot1( void )
     shade_min = zmin + ( zmax - zmin ) * 0.4;
     shade_max = zmin + ( zmax - zmin ) * 0.6;
     sh_color  = 7;
-    sh_width  = 2;
+    sh_width  = 2.;
     min_color = 9;
     max_color = 2;
-    min_width = 2;
-    max_width = 2;
+    min_width = 2.;
+    max_width = 2.;
 
     plpsty( 8 );
     plshade1( &z[0][0], XPTS, YPTS, NULL, -1., 1., -1., 1.,
@@ -208,8 +209,9 @@ static void
 plot2( void )
 {
     PLFLT        shade_min, shade_max, sh_color;
-    PLINT        sh_cmap   = 0, sh_width;
-    PLINT        min_color = 0, min_width = 0, max_color = 0, max_width = 0;
+    PLINT        sh_cmap   = 0;
+    PLINT        min_color = 0, max_color = 0;
+    PLFLT        sh_width, min_width = 0., max_width = 0.;
     int          i;
     static PLINT nlin[10]   = { 1, 1, 1, 1, 1, 2, 2, 2, 2, 2 };
     static PLINT inc[10][2] = { { 450,    0 }, { -450,    0 }, { 0,   0 }, { 900,   0 },
@@ -220,7 +222,7 @@ plot2( void )
                                 { 2000, 2000 }, { 2000, 2000 }, { 4000, 4000 },
                                 { 4000, 2000 } };
 
-    sh_width = 2;
+    sh_width = 2.;
 
     pladv( 0 );
     plvpor( 0.1, 0.9, 0.1, 0.9 );
@@ -295,19 +297,19 @@ plot3( void )
 #define F( a, b )    ( f[a * ny + b] )
 
 static void
-f2mnmx( PLFLT *f, PLINT nx, PLINT ny, PLFLT *fmin, PLFLT *fmax )
+f2mnmx( PLFLT *f, PLINT nx, PLINT ny, PLFLT *fnmin, PLFLT *fnmax )
 {
     int i, j;
 
-    *fmax = F( 0, 0 );
-    *fmin = *fmax;
+    *fnmax = F( 0, 0 );
+    *fnmin = *fnmax;
 
     for ( i = 0; i < nx; i++ )
     {
         for ( j = 0; j < ny; j++ )
         {
-            *fmax = MAX( *fmax, F( i, j ) );
-            *fmin = MIN( *fmin, F( i, j ) );
+            *fnmax = MAX( *fnmax, F( i, j ) );
+            *fnmin = MIN( *fnmin, F( i, j ) );
         }
     }
 }

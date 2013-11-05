@@ -113,6 +113,9 @@ EOT
 
   plinit ();
 
+  # Use a colour map with no black band in the middle.
+  cmap1_init();
+
   plseed (5489);
 
   my ($x, $y, $z) = create_data ($pts);    # the sampled data
@@ -127,7 +130,12 @@ EOT
   plcol0 (15);
   pllab ("X", "Y", "The original data sampling");
   plcol0 (2);
-  plpoin ($x, $y, 5);
+
+  # Force a perl loop, cannot be vectorized ;-(
+  for (my $i=0; $i<$pts;$i++) {
+    plcol1( ( $z->at($i) - $zmin ) / ( $zmax - $zmin ) );
+    plstring($x->at($i), $y->at($i), "#(727)" );
+  }
   pladv (0);
 
   plssub (3, 2);

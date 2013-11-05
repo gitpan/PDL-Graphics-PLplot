@@ -21,11 +21,12 @@ t/x11.pl
 t/x12.pl
 t/x13.pl
 t/x15.pl
-t/x16.pl
+t/not_covered/x16.pl
 t/x17.pl
 t/x18.pl
 t/x19.pl
 t/x21.pl
+t/not_covered/x20.pl
 t/x22.pl
 t/x23.pl
 t/x24.pl
@@ -51,10 +52,11 @@ t/x11c.c
 t/x12c.c
 t/x13c.c
 t/x15c.c
-t/x16c.c
+t/not_covered/x16c.c
 t/x17c.c
 t/x18c.c
 t/x19c.c
+t/not_covered/x20c.c
 t/x21c.c
 t/x22c.c
 t/x23c.c
@@ -68,3 +70,4 @@ t/x30c.c
 t/x31c.c
 t/x33c.c
 t/plcdemos.h
+META.json                                Module JSON meta-data (added by MakeMaker)

@@ -1,4 +1,4 @@
-// $Id: x29c.c 11680 2011-03-27 17:57:51Z airwin $
+// $Id: x29c.c 12213 2012-08-14 07:03:04Z andrewross $
 //
 //     Sample plots using date / time formatting for axes
 //
@@ -29,10 +29,10 @@ static PLFLT xerr1[365], xerr2[365], yerr1[365], yerr2[365];
 
 // Function prototypes
 
-void plot1();
-void plot2();
-void plot3();
-void plot4();
+void plot1( void );
+void plot2( void );
+void plot3( void );
+void plot4( void );
 
 //--------------------------------------------------------------------------
 // main
@@ -81,7 +81,7 @@ main( int argc, const char *argv[] )
 
 // Plot a model diurnal cycle of temperature
 void
-plot1()
+plot1( void )
 {
     int   i, npts;
     PLFLT xmin, xmax, ymin, ymax;
@@ -140,7 +140,7 @@ plot1()
 
 // Plot the number of hours of daylight as a function of day for a year
 void
-plot2()
+plot2( void )
 {
     int   j, npts;
     PLFLT xmin, xmax, ymin, ymax;
@@ -187,7 +187,7 @@ plot2()
 }
 
 void
-plot3()
+plot3( void )
 {
     int   i, npts;
     PLFLT xmin, xmax, ymin, ymax;
@@ -231,20 +231,20 @@ plot3()
 }
 
 void
-plot4()
+plot4( void )
 {
     // TAI-UTC (seconds) as a function of time.
     // Use Besselian epochs as the continuous time interval just to prove
     // this does not introduce any issues.
 
     PLFLT scale, offset1, offset2;
-    PLFLT xmin, xmax, ymin, ymax, xlabel_step;
-    int   kind, npts, if_TAI_time_format, i;
+    PLFLT xmin, xmax, ymin = 0.0, ymax = 0.0, xlabel_step = 0.0;
+    int   kind, npts = 0, if_TAI_time_format = 0, i;
     char  time_format[10];
     char  title_suffix[100];
     char  xtitle[100];
     char  title[100];
-    PLFLT x[1001], y[1001];
+    PLFLT xx[1001], yy[1001];
     PLINT tai_year, tai_month, tai_day, tai_hour, tai_min;
     PLFLT tai_sec, tai;
     PLINT utc_year, utc_month, utc_day, utc_hour, utc_min;
@@ -342,15 +342,15 @@ plot4()
 
         for ( i = 0; i < npts; i++ )
         {
-            x[i] = xmin + i * ( xmax - xmin ) / ( (double) ( npts - 1 ) );
+            xx[i] = xmin + i * ( xmax - xmin ) / ( (double) ( npts - 1 ) );
             plconfigtime( scale, offset1, offset2, 0x0, 0, 0, 0, 0, 0, 0, 0. );
-            tai = x[i];
+            tai = xx[i];
             plbtime( &tai_year, &tai_month, &tai_day, &tai_hour, &tai_min, &tai_sec, tai );
             plconfigtime( scale, offset1, offset2, 0x2, 0, 0, 0, 0, 0, 0, 0. );
             plbtime( &utc_year, &utc_month, &utc_day, &utc_hour, &utc_min, &utc_sec, tai );
             plconfigtime( scale, offset1, offset2, 0x0, 0, 0, 0, 0, 0, 0, 0. );
             plctime( utc_year, utc_month, utc_day, utc_hour, utc_min, utc_sec, &utc );
-            y[i] = ( tai - utc ) * scale * 86400.;
+            yy[i] = ( tai - utc ) * scale * 86400.;
         }
 
         pladv( 0 );
@@ -365,11 +365,11 @@ plot4()
         plbox( "bcnstd", xlabel_step, 0, "bcnstv", 0., 0 );
         plcol0( 3 );
         strncpy( title, "@frPLplot Example 29 - TAI-UTC ", 100 );
-        strncat( title, title_suffix, 100 );
+        strncat( title, title_suffix, 100 - strlen( title ) - 1 );
         pllab( xtitle, "TAI-UTC (sec)", title );
 
         plcol0( 4 );
 
-        plline( npts, x, y );
+        plline( npts, xx, yy );
     }
 }

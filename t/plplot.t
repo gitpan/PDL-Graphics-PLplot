@@ -238,11 +238,25 @@ $pl->colorkey ($z, 'v', VIEWPORT => [0.93, 0.96, 0.15, 0.85]);
 $pl->close;
 ok (-s "test13.$dev" > 0, "3D color plot, high level interface");
 
-# test contour plots with higher level interface. 
+# test 2D grid polar contour plotting (taken from plplot example 9)
 $pl = PDL::Graphics::PLplot->new (DEV => $dev, FILE => "test13a.$dev");
-$pl->shadeplot ($z, $nsteps, BOX => [-1, 1, -1, 1], PLOTTYPE => 'CONTOUR', CONTOURLABELS => 1);
+my $r_pts     = 40;
+my $theta_pts = 40;
+my $nlevels   = 20;
+
+my $r     = ((sequence ($r_pts)) / ($r_pts - 1))->dummy (1, $theta_pts);
+   $z     = $r;  # or any other 2D surface to plot...
+my $theta = ((2 * $pi / ($theta_pts - 2)) * sequence ($theta_pts))->dummy (0, $r_pts);
+   $xmap  = $r * cos ($theta);
+   $ymap  = $r * sin ($theta);
+
+$pl->shadeplot ($z, $nlevels, PLOTTYPE => 'CONTOUR',
+                              JUST     => 1,
+                              BOX      => [-1,1,-1,1],
+                              PALETTE  => 'GREENRED',
+                              GRIDMAP2 => [$xmap, $ymap]);
 $pl->close;
-ok (-s "test13a.$dev" > 0, "3D contour plot, high level interface");
+ok (-s "test13a.$dev" > 0, "3D polar contour plot using 2D surface mapping, high level interface");
 
 # Test histogram plotting (low level interface)
 plsdev ($dev);

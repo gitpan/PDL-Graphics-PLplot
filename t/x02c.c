@@ -1,4 +1,4 @@
-// $Id: x02c.c 11289 2010-10-29 20:44:17Z airwin $
+// $Id: x02c.c 12288 2013-01-30 04:40:35Z airwin $
 //
 //      Multiple window and color map 0 demo.
 //
@@ -12,8 +12,8 @@
 // user-modified.
 //--------------------------------------------------------------------------
 
-void demo1();
-void demo2();
+void demo1( void );
+void demo2( void );
 void draw_windows( int nw, int cmap0_offset );
 
 int
@@ -39,7 +39,7 @@ main( int argc, const char *argv[] )
 // Demonstrates multiple windows and default color map 0 palette.
 //--------------------------------------------------------------------------
 
-void demo1()
+void demo1( void )
 {
     plbop();
 
@@ -58,7 +58,7 @@ void demo1()
 // HLS -> RGB translation.
 //--------------------------------------------------------------------------
 
-void demo2()
+void demo2( void )
 {
 // Set up cmap0
 // Use 100 custom colors in addition to base 16
@@ -141,14 +141,14 @@ void draw_windows( int nw, int cmap0_offset )
         vmax = 0.9;
         for ( j = 0; j <= 2; j++ )
         {
-            plwid( j + 1 );
+            plwidth( j + 1 );
             plvpor( vmin, vmax, vmin, vmax );
             plwind( 0.0, 1.0, 0.0, 1.0 );
             plbox( "bc", 0.0, 0, "bc", 0.0, 0 );
             vmin = vmin + 0.1;
             vmax = vmax - 0.1;
         }
-        plwid( 1 );
+        plwidth( 1 );
         plptex( 0.5, 0.5, 1.0, 0.0, 0.5, text );
     }
 }

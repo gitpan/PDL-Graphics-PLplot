@@ -1,7 +1,7 @@
-// $Id: x22c.c 11680 2011-03-27 17:57:51Z airwin $
+// $Id: x22c.c 12176 2012-02-24 20:33:39Z andrewross $
 //
 //  Simple vector plot example
-//  Copyright (C) 2004 Andrew Ross <andrewross@users.sourceforge.net>
+//  Copyright (C) 2004 Andrew Ross
 //  Copyright (C) 2004  Rafael Laboissiere
 //
 //
@@ -25,6 +25,11 @@
 
 #include "plcdemos.h"
 
+void circulation( void );
+void constriction( void );
+void potential( void );
+void f2mnmx( PLFLT **f, PLINT nx, PLINT ny, PLFLT *fnmin, PLFLT *fnmax );
+
 // Pairs of points making the line segments used to plot the user defined arrow
 static PLFLT arrow_x[6] = { -0.5, 0.5, 0.3, 0.5, 0.3, 0.5 };
 static PLFLT arrow_y[6] = { 0.0, 0.0, 0.2, 0.0, -0.2, 0.0 };
@@ -41,7 +46,7 @@ static PLFLT arrow2_y[6] = { 0.0, 0.0, 0.2, 0.0, -0.2, 0.0 };
 // Vector plot of the circulation about the origin
 //
 void
-circulation()
+circulation( void )
 {
     int       i, j;
     PLFLT     dx, dy, x, y;
@@ -85,7 +90,7 @@ circulation()
     plenv( xmin, xmax, ymin, ymax, 0, 0 );
     pllab( "(x)", "(y)", "#frPLplot Example 22 - circulation" );
     plcol0( 2 );
-    plvect( (const PLFLT **) u, (const PLFLT **) v, nx, ny, 0.0, pltr2, (void *) &cgrid2 );
+    plvect( (const PLFLT * const *) u, (const PLFLT * const *) v, nx, ny, 0.0, pltr2, (void *) &cgrid2 );
     plcol0( 1 );
 
     plFree2dGrid( cgrid2.xg, nx, ny );
@@ -98,7 +103,7 @@ circulation()
 // Vector plot of flow through a constricted pipe
 //
 void
-constriction()
+constriction( void )
 {
     int       i, j;
     PLFLT     dx, dy, x, y;
@@ -153,7 +158,7 @@ constriction()
     plenv( xmin, xmax, ymin, ymax, 0, 0 );
     pllab( "(x)", "(y)", "#frPLplot Example 22 - constriction" );
     plcol0( 2 );
-    plvect( (const PLFLT **) u, (const PLFLT **) v, nx, ny, -0.5, pltr2, (void *) &cgrid2 );
+    plvect( (const PLFLT * const *) u, (const PLFLT * const *) v, nx, ny, -0.5, pltr2, (void *) &cgrid2 );
     plcol0( 1 );
 
     plFree2dGrid( cgrid2.xg, nx, ny );
@@ -164,19 +169,20 @@ constriction()
 
 
 
-void f2mnmx( PLFLT **f, PLINT nx, PLINT ny, PLFLT *fmin, PLFLT *fmax )
+void
+f2mnmx( PLFLT **f, PLINT nx, PLINT ny, PLFLT *fnmin, PLFLT *fnmax )
 {
     int i, j;
 
-    *fmax = f[0][0];
-    *fmin = *fmax;
+    *fnmax = f[0][0];
+    *fnmin = *fnmax;
 
     for ( i = 0; i < nx; i++ )
     {
         for ( j = 0; j < ny; j++ )
         {
-            *fmax = MAX( *fmax, f[i][j] );
-            *fmin = MIN( *fmin, f[i][j] );
+            *fnmax = MAX( *fnmax, f[i][j] );
+            *fnmin = MIN( *fnmin, f[i][j] );
         }
     }
 }
@@ -184,7 +190,8 @@ void f2mnmx( PLFLT **f, PLINT nx, PLINT ny, PLFLT *fmin, PLFLT *fmax )
 //
 // Vector plot of the gradient of a shielded potential (see example 9)
 //
-void potential()
+void
+potential( void )
 {
 #if !defined ( WIN32 )
     const int nper   = 100;
@@ -275,13 +282,13 @@ void potential()
     }
     plcol0( 3 );
     pllsty( 2 );
-    plcont( (const PLFLT **) z, nr, ntheta, 1, nr, 1, ntheta, clevel, nlevel, pltr2, (void *) &cgrid2 );
+    plcont( (const PLFLT * const *) z, nr, ntheta, 1, nr, 1, ntheta, clevel, nlevel, pltr2, (void *) &cgrid2 );
     pllsty( 1 );
     plcol0( 1 );
 
     // Plot the vectors of the gradient of the potential
     plcol0( 2 );
-    plvect( (const PLFLT **) u, (const PLFLT **) v, nr, ntheta, 25.0, pltr2, (void *) &cgrid2 );
+    plvect( (const PLFLT * const *) u, (const PLFLT * const *) v, nr, ntheta, 25.0, pltr2, (void *) &cgrid2 );
     plcol0( 1 );
 
     // Plot the perimeter of the cylinder

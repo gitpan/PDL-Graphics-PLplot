@@ -24,10 +24,10 @@ my $maindir = '..' if (-s "../OPTIONS!");
    $maindir = '.'  if (-s "./OPTIONS!");
 my $plversion = do "$maindir/OPTIONS!";
 
-if ($plversion->{'c_pllegend'}) {
+if ($plversion->{'c_plwidth'}) {
   plan qw(no_plan);
 } else {
-  plan skip_all => 'pllegend not found--plplot version not recent enough';
+  plan skip_all => 'plwidth not found--plplot version needs to be 5.9.10 or greater to run library tests';
 }
 
 foreach my $plplot_test_script (@scripts) {
@@ -51,12 +51,20 @@ foreach my $plplot_test_script (@scripts) {
   # Run C version
   my $devnull = File::Spec->devnull();
   my $dot_slash = $^O =~ /MSWin32/i ? '' : './';
-  system "${dot_slash}a.out -dev svg -o x${num}c.svg -fam > $devnull 2>&1";
+  if ($num == 14) {
+    system "echo foo.svg | ${dot_slash}a.out -dev svg -o x${num}c.svg -fam > $devnull 2>&1";
+  } else {
+    system "${dot_slash}a.out -dev svg -o x${num}c.svg -fam > $devnull 2>&1";
+  }
   ok ($? == 0, "C code $c_code ran successfully");
 
   # Run perl version
-  my $perlrun = $^O =~ /MSWin32/i ? 'perl -Mblib' : '';
-  system "$perlrun $plplot_test_script -dev svg -o x${num}p.svg -fam > $devnull 2>&1";
+  my $perlrun = 'perl -Mblib';
+  if ($num == 14) {
+    system "echo foo.svg | $perlrun $plplot_test_script -dev svg -o x${num}p.svg -fam > $devnull 2>&1";
+  } else {
+    system "$perlrun $plplot_test_script -dev svg -o x${num}p.svg -fam > $devnull 2>&1";
+  }
   ok ($? == 0, "Script $plplot_test_script ran successfully");
   my @output = glob ("x${num}p.svg*");
   foreach my $outfile (@output) {
@@ -70,6 +78,7 @@ foreach my $plplot_test_script (@scripts) {
 
 # comment this out for testing!!!
 unlink glob ("$cwd/x???.svg.*");
+unlink glob ("$cwd/foo.svg.*");
 unlink "$cwd/a.out";
 
 # Local Variables:

@@ -1,4 +1,4 @@
-// $Id: x01c.c 11680 2011-03-27 17:57:51Z airwin $
+// $Id: x01c.c 12288 2013-01-30 04:40:35Z airwin $
 //
 //      Simple line plot and multiple windows demo.
 //
@@ -320,9 +320,9 @@ plot2( void )
 // Draw the line
 
     plcol0( 3 );
-    plwid( 2 );
+    plwidth( 2 );
     plline( 100, x, y );
-    plwid( 1 );
+    plwidth( 1 );
 }
 
 //--------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-// $Id: x16c.c 11767 2011-06-13 16:16:57Z airwin $
+// $Id: x16c.c 12346 2013-05-22 22:41:41Z andrewross $
 //
 //      plshade demo, using color fill.
 //
@@ -20,7 +20,7 @@ static int exclude = 0;         // By default do not plot a page illustrating
                                 // front end other than the C one.
 
 // For now, don't show the colorbars while we are working out the API.
-static int colorbar = 0;
+static int colorbar = 1;
 
 // polar plot data
 #define PERIMETERPTS    100
@@ -30,7 +30,7 @@ static int colorbar = 0;
 PLFLT tr[6];
 
 static void
-mypltr( PLFLT x, PLFLT y, PLFLT *tx, PLFLT *ty, void *pltr_data )
+mypltr( PLFLT x, PLFLT y, PLFLT *tx, PLFLT *ty, void * PL_UNUSED( pltr_data ) )
 {
     *tx = tr[0] * x + tr[1] * y + tr[2];
     *ty = tr[3] * x + tr[4] * y + tr[5];
@@ -40,6 +40,8 @@ mypltr( PLFLT x, PLFLT y, PLFLT *tx, PLFLT *ty, void *pltr_data )
 
 static void
 f2mnmx( PLFLT **f, PLINT nx, PLINT ny, PLFLT *fmin, PLFLT *fmax );
+
+PLINT zdefined( PLFLT x, PLFLT y );
 
 // Options data structure definition.
 
@@ -126,17 +128,39 @@ zdefined( PLFLT x, PLFLT y )
 int
 main( int argc, const char *argv[] )
 {
-    int      i, j;
-    PLFLT    x, y, argx, argy, distort, r, t;
-    PLFLT    px[PERIMETERPTS], py[PERIMETERPTS];
+    int        i, j;
+    PLFLT      x, y, argx, argy, distort, r, t;
+    PLFLT      px[PERIMETERPTS], py[PERIMETERPTS];
 
-    PLFLT    **z, **w, zmin, zmax;
-    PLFLT    *clevel, *shedge, *xg1, *yg1;
-    PLcGrid  cgrid1;
-    PLcGrid2 cgrid2;
+    PLFLT      **z, **w, zmin, zmax;
+    PLFLT      *clevel, *shedge, *xg1, *yg1;
+    PLcGrid    cgrid1;
+    PLcGrid2   cgrid2;
 
-    PLINT    fill_width = 2, cont_color = 0, cont_width = 0;
-    PLFLT    colorbar_width, colorbar_height;
+    PLFLT      fill_width = 2., cont_width = 0.;
+    PLFLT      colorbar_width, colorbar_height;
+    PLINT      cont_color = 0;
+#define NUM_AXES    1
+    PLINT      n_axis_opts  = NUM_AXES;
+    const char *axis_opts[] = {
+        "bcvtm",
+    };
+    PLINT      num_values[NUM_AXES];
+    PLFLT      *values[NUM_AXES];
+    PLFLT      axis_ticks[NUM_AXES] = {
+        0.0,
+    };
+    PLINT      axis_subticks[NUM_AXES] = {
+        0,
+    };
+#define NUM_LABELS    1
+    PLINT      n_labels     = NUM_LABELS;
+    PLINT      label_opts[] = {
+        PL_COLORBAR_LABEL_BOTTOM,
+    };
+    const char *labels[] = {
+        "Magnitude",
+    };
 
 // Parse and process command line arguments
 
@@ -163,10 +187,10 @@ main( int argc, const char *argv[] )
 
 // Allocate data structures
 
-    clevel = (PLFLT *) calloc( ns, sizeof ( PLFLT ) );
-    shedge = (PLFLT *) calloc( ns + 1, sizeof ( PLFLT ) );
-    xg1    = (PLFLT *) calloc( nx, sizeof ( PLFLT ) );
-    yg1    = (PLFLT *) calloc( ny, sizeof ( PLFLT ) );
+    clevel = (PLFLT *) calloc( (size_t) ns, sizeof ( PLFLT ) );
+    shedge = (PLFLT *) calloc( (size_t) ( ns + 1 ), sizeof ( PLFLT ) );
+    xg1    = (PLFLT *) calloc( (size_t) nx, sizeof ( PLFLT ) );
+    yg1    = (PLFLT *) calloc( (size_t) ny, sizeof ( PLFLT ) );
 
     plAlloc2dGrid( &z, nx, ny );
     plAlloc2dGrid( &w, nx, ny );
@@ -229,7 +253,7 @@ main( int argc, const char *argv[] )
 
     plpsty( 0 );
 
-    plshades( (const PLFLT **) z, nx, ny, NULL, -1., 1., -1., 1.,
+    plshades( (const PLFLT * const *) z, nx, ny, NULL, -1., 1., -1., 1.,
         shedge, ns + 1, fill_width,
         cont_color, cont_width,
         plfill, 1, NULL, NULL );
@@ -242,11 +266,16 @@ main( int argc, const char *argv[] )
         plsmaj( 0.0, 0.5 );
         plsmin( 0.0, 0.5 );
 
+        num_values[0] = ns + 1;
+        values[0]     = shedge;
         plcolorbar( &colorbar_width, &colorbar_height,
             PL_COLORBAR_SHADE | PL_COLORBAR_SHADE_LABEL, 0,
-            0.026, 0.0, 0.0375, 0.875, 0, 1, 1, 0.0, 0.0,
-            cont_color, cont_width, 0.0, 0, "bcvtm", "",
-            ns + 1, shedge );
+            0.005, 0.0, 0.0375, 0.875, 0, 1, 1, 0.0, 0.0,
+            cont_color, cont_width,
+            n_labels, label_opts, labels,
+            n_axis_opts, axis_opts,
+            axis_ticks, axis_subticks,
+            num_values, (const PLFLT * const *) values );
 
         // Reset text and tick sizes
         plschr( 0.0, 1.0 );
@@ -276,7 +305,7 @@ main( int argc, const char *argv[] )
 
     plpsty( 0 );
 
-    plshades( (const PLFLT **) z, nx, ny, NULL, -1., 1., -1., 1.,
+    plshades( (const PLFLT * const *) z, nx, ny, NULL, -1., 1., -1., 1.,
         shedge, ns + 1, fill_width,
         cont_color, cont_width,
         plfill, 1, pltr1, (void *) &cgrid1 );
@@ -289,11 +318,16 @@ main( int argc, const char *argv[] )
         plsmaj( 0.0, 0.5 );
         plsmin( 0.0, 0.5 );
 
+        num_values[0] = ns + 1;
+        values[0]     = shedge;
         plcolorbar( &colorbar_width, &colorbar_height,
             PL_COLORBAR_SHADE | PL_COLORBAR_SHADE_LABEL, 0,
-            0.026, 0.0, 0.0375, 0.875, 0, 1, 1, 0.0, 0.0,
-            cont_color, cont_width, 0.0, 0, "bcvtm", "",
-            ns + 1, shedge );
+            0.005, 0.0, 0.0375, 0.875, 0, 1, 1, 0.0, 0.0,
+            cont_color, cont_width,
+            n_labels, label_opts, labels,
+            n_axis_opts, axis_opts,
+            axis_ticks, axis_subticks,
+            num_values, (const PLFLT * const *) values );
 
         // Reset text and tick sizes
         plschr( 0.0, 1.0 );
@@ -323,7 +357,7 @@ main( int argc, const char *argv[] )
 
     plpsty( 0 );
 
-    plshades( (const PLFLT **) z, nx, ny, NULL, -1., 1., -1., 1.,
+    plshades( (const PLFLT * const *) z, nx, ny, NULL, -1., 1., -1., 1.,
         shedge, ns + 1, fill_width,
         cont_color, cont_width,
         plfill, 0, pltr2, (void *) &cgrid2 );
@@ -336,11 +370,16 @@ main( int argc, const char *argv[] )
         plsmaj( 0.0, 0.5 );
         plsmin( 0.0, 0.5 );
 
+        num_values[0] = ns + 1;
+        values[0]     = shedge;
         plcolorbar( &colorbar_width, &colorbar_height,
             PL_COLORBAR_SHADE | PL_COLORBAR_SHADE_LABEL, 0,
-            0.026, 0.0, 0.0375, 0.875, 0, 1, 1, 0.0, 0.0,
-            cont_color, cont_width, 0.0, 0, "bcvtm", "",
-            ns + 1, shedge );
+            0.005, 0.0, 0.0375, 0.875, 0, 1, 1, 0.0, 0.0,
+            cont_color, cont_width,
+            n_labels, label_opts, labels,
+            n_axis_opts, axis_opts,
+            axis_ticks, axis_subticks,
+            num_values, (const PLFLT * const *) values );
 
         // Reset text and tick sizes
         plschr( 0.0, 1.0 );
@@ -351,7 +390,7 @@ main( int argc, const char *argv[] )
     plcol0( 1 );
     plbox( "bcnst", 0.0, 0, "bcnstv", 0.0, 0 );
     plcol0( 2 );
-    plcont( (const PLFLT **) w, nx, ny, 1, nx, 1, ny, clevel, ns, pltr2, (void *) &cgrid2 );
+    plcont( (const PLFLT * const *) w, nx, ny, 1, nx, 1, ny, clevel, ns, pltr2, (void *) &cgrid2 );
 
     pllab( "distance", "altitude", "Bogon density, with streamlines" );
 
@@ -369,9 +408,9 @@ main( int argc, const char *argv[] )
 
     plpsty( 0 );
 
-    plshades( (const PLFLT **) z, nx, ny, NULL, -1., 1., -1., 1.,
+    plshades( (const PLFLT * const *) z, nx, ny, NULL, -1., 1., -1., 1.,
         shedge, ns + 1, fill_width,
-        2, 3,
+        2, 3.,
         plfill, 0, pltr2, (void *) &cgrid2 );
 
     if ( colorbar )
@@ -382,11 +421,16 @@ main( int argc, const char *argv[] )
         plsmaj( 0.0, 0.5 );
         plsmin( 0.0, 0.5 );
 
+        num_values[0] = ns + 1;
+        values[0]     = shedge;
         plcolorbar( &colorbar_width, &colorbar_height,
             PL_COLORBAR_SHADE | PL_COLORBAR_SHADE_LABEL, 0,
-            0.026, 0.0, 0.0375, 0.875, 0, 1, 1, 0.0, 0.0,
-            2, 3, 0.0, 0, "bcvxm", "",
-            ns + 1, shedge );
+            0.005, 0.0, 0.0375, 0.875, 0, 1, 1, 0.0, 0.0,
+            2, 3.,
+            n_labels, label_opts, labels,
+            n_axis_opts, axis_opts,
+            axis_ticks, axis_subticks,
+            num_values, (const PLFLT * const *) values );
 
         // Reset text and tick sizes
         plschr( 0.0, 1.0 );
@@ -419,7 +463,7 @@ main( int argc, const char *argv[] )
 
         plpsty( 0 );
 
-        plshades( (const PLFLT **) z, nx, ny, zdefined, -1., 1., -1., 1.,
+        plshades( (const PLFLT * const *) z, nx, ny, zdefined, -1., 1., -1., 1.,
             shedge, ns + 1, fill_width,
             cont_color, cont_width,
             plfill, 0, pltr2, (void *) &cgrid2 );
@@ -466,7 +510,7 @@ main( int argc, const char *argv[] )
         shedge[i] = zmin + ( zmax - zmin ) * (PLFLT) i / (PLFLT) ns;
 
     //  Now we can shade the interior region.
-    plshades( (const PLFLT **) z, nx, ny, NULL, -1., 1., -1., 1.,
+    plshades( (const PLFLT * const *) z, nx, ny, NULL, -1., 1., -1., 1.,
         shedge, ns + 1, fill_width,
         cont_color, cont_width,
         plfill, 0, pltr2, (void *) &cgrid2 );
@@ -479,11 +523,16 @@ main( int argc, const char *argv[] )
         plsmaj( 0.0, 0.5 );
         plsmin( 0.0, 0.5 );
 
+        num_values[0] = ns + 1;
+        values[0]     = shedge;
         plcolorbar( &colorbar_width, &colorbar_height,
             PL_COLORBAR_SHADE | PL_COLORBAR_SHADE_LABEL, 0,
-            0.026, 0.0, 0.0375, 0.875, 0, 1, 1, 0.0, 0.0,
-            cont_color, cont_width, 0.0, 0, "bcvtm", "",
-            ns + 1, shedge );
+            0.005, 0.0, 0.0375, 0.875, 0, 1, 1, 0.0, 0.0,
+            cont_color, cont_width,
+            n_labels, label_opts, labels,
+            n_axis_opts, axis_opts,
+            axis_ticks, axis_subticks,
+            num_values, (const PLFLT * const *) values );
 
         // Reset text and tick sizes
         plschr( 0.0, 1.0 );
@@ -530,19 +579,19 @@ main( int argc, const char *argv[] )
 //--------------------------------------------------------------------------
 
 static void
-f2mnmx( PLFLT **f, PLINT nx, PLINT ny, PLFLT *fmin, PLFLT *fmax )
+f2mnmx( PLFLT **f, PLINT nnx, PLINT nny, PLFLT *fnmin, PLFLT *fnmax )
 {
     int i, j;
 
-    *fmax = f[0][0];
-    *fmin = *fmax;
+    *fnmax = f[0][0];
+    *fnmin = *fnmax;
 
-    for ( i = 0; i < nx; i++ )
+    for ( i = 0; i < nnx; i++ )
     {
-        for ( j = 0; j < ny; j++ )
+        for ( j = 0; j < nny; j++ )
         {
-            *fmax = MAX( *fmax, f[i][j] );
-            *fmin = MIN( *fmin, f[i][j] );
+            *fnmax = MAX( *fnmax, f[i][j] );
+            *fnmin = MIN( *fnmin, f[i][j] );
         }
     }
 }

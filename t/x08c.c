@@ -1,4 +1,4 @@
-// $Id: x08c.c 11680 2011-03-27 17:57:51Z airwin $
+// $Id: x08c.c 12095 2011-12-03 08:56:15Z andrewross $
 //
 //      3-d plot demo.
 //
@@ -37,7 +37,7 @@ static PLFLT alt[] = { 60.0, 20.0 };
 static PLFLT az[] = { 30.0, 60.0 };
 static void cmap1_init( int );
 
-static char *title[] =
+static const char *title[] =
 {
     "#frPLplot Example 8 - Alt=60, Az=30",
     "#frPLplot Example 8 - Alt=20, Az=60",
@@ -202,7 +202,7 @@ main( int argc, const char *argv[] )
         }
     }
 
-    plMinMax2dGrid( (const PLFLT **) z, XPTS, YPTS, &zmax, &zmin );
+    plMinMax2dGrid( (const PLFLT * const *) z, XPTS, YPTS, &zmax, &zmin );
     step = ( zmax - zmin ) / ( nlevel + 1 );
     for ( i = 0; i < nlevel; i++ )
         clevel[i] = zmin + step + step * i;

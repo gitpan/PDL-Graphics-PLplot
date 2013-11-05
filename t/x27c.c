@@ -1,4 +1,4 @@
-// $Id: x27c.c 11682 2011-03-31 02:55:49Z airwin $
+// $Id: x27c.c 11992 2011-10-20 22:54:16Z andrewross $
 //
 //      Drawing "spirograph" curves - epitrochoids, cycolids, roulettes
 //
@@ -29,6 +29,7 @@
 void cycloid( void );
 void spiro( PLFLT data[], int fill );
 PLINT gcd( PLINT a, PLINT b );
+void arcs( void );
 
 //--------------------------------------------------------------------------
 // main
@@ -47,15 +48,15 @@ main( int argc, const char *argv[] )
     // N.B. N is just a place holder since it is no longer used
     // (because we now have proper termination of the angle loop).
     PLFLT params[9][4] = {
-        21.0,   7.0,  7.0,  3.0, // Deltoid
-        21.0,   7.0, 10.0,  3.0,
-        21.0,  -7.0, 10.0,  3.0,
-        20.0,   3.0,  7.0, 20.0,
-        20.0,   3.0, 10.0, 20.0,
-        20.0,  -3.0, 10.0, 20.0,
-        20.0,  13.0,  7.0, 20.0,
-        20.0,  13.0, 20.0, 20.0,
-        20.0, -13.0, 20.0, 20.0
+        { 21.0,   7.0,  7.0,  3.0 }, // Deltoid
+        { 21.0,   7.0, 10.0,  3.0 },
+        { 21.0,  -7.0, 10.0,  3.0 },
+        { 20.0,   3.0,  7.0, 20.0 },
+        { 20.0,   3.0, 10.0, 20.0 },
+        { 20.0,  -3.0, 10.0, 20.0 },
+        { 20.0,  13.0,  7.0, 20.0 },
+        { 20.0,  13.0, 20.0, 20.0 },
+        { 20.0, -13.0, 20.0, 20.0 }
     };
 
     int   i;
@@ -111,6 +112,10 @@ main( int argc, const char *argv[] )
         spiro( &params[i][0], fill );
     }
 
+// Finally, an example to test out plarc capabilities
+
+    arcs();
+
 // Don't forget to call plend() to finish off!
 
     plend();
@@ -158,11 +163,11 @@ spiro( PLFLT params[], int fill )
     PLFLT        phi;
     PLFLT        phiw;
     PLFLT        dphi;
-    PLFLT        xmin;
-    PLFLT        xmax;
+    PLFLT        xmin = 0.0;
+    PLFLT        xmax = 0.0;
     PLFLT        xrange_adjust;
-    PLFLT        ymin;
-    PLFLT        ymax;
+    PLFLT        ymin = 0.0;
+    PLFLT        ymax = 0.0;
     PLFLT        yrange_adjust;
 
     // Fill the coordinates
@@ -170,7 +175,7 @@ spiro( PLFLT params[], int fill )
     // Proper termination of the angle loop very near the beginning
     // point, see
     // http://mathforum.org/mathimages/index.php/Hypotrochoid.
-    windings = (PLINT) abs( params[1] ) / gcd( (PLINT) params[0], (PLINT) params[1] );
+    windings = (int) ( abs( (int) params[1] ) / gcd( (PLINT) params[0], (PLINT) params[1] ) );
     steps    = NPNT / windings;
     dphi     = 2.0 * PI / (PLFLT) steps;
 
@@ -214,5 +219,37 @@ spiro( PLFLT params[], int fill )
     else
     {
         plline( 1 + steps * windings, xcoord, ycoord );
+    }
+}
+
+void arcs()
+{
+#define NSEG    8
+    int   i;
+    PLFLT theta, dtheta;
+    PLFLT a, b;
+
+    theta  = 0.0;
+    dtheta = 360.0 / NSEG;
+    plenv( -10.0, 10.0, -10.0, 10.0, 1, 0 );
+
+    // Plot segments of circle in different colors
+    for ( i = 0; i < NSEG; i++ )
+    {
+        plcol0( i % 2 + 1 );
+        plarc( 0.0, 0.0, 8.0, 8.0, theta, theta + dtheta, 0.0, 0 );
+        theta = theta + dtheta;
+    }
+
+    // Draw several filled ellipses inside the circle at different
+    // angles.
+    a     = 3.0;
+    b     = a * tan( ( dtheta / 180.0 * M_PI ) / 2.0 );
+    theta = dtheta / 2.0;
+    for ( i = 0; i < NSEG; i++ )
+    {
+        plcol0( 2 - i % 2 );
+        plarc( a * cos( theta / 180.0 * M_PI ), a * sin( theta / 180.0 * M_PI ), a, b, 0.0, 360.0, theta, 1 );
+        theta = theta + dtheta;
     }
 }

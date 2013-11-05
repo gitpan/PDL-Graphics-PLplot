@@ -1,6 +1,6 @@
 // -*- coding: utf-8; -*-
 //
-// $Id: x26c.c 11717 2011-04-21 00:47:06Z airwin $
+// $Id: x26c.c 12319 2013-05-01 21:51:24Z airwin $
 //
 // Multi-lingual version of the first page of example 4.
 //
@@ -64,44 +64,45 @@
 
 #include "plcdemos.h"
 
-static char *x_label[] = {
+static const char *x_labels[] = {
     "Frequency",
     "Частота",
     NULL
 };
 
-static char *y_label[] = {
+static const char *y_labels[] = {
     "Amplitude (dB)",
     "Амплитуда (dB)",
     NULL
 };
 
-static char *alty_label[] = {
+static const char *alty_labels[] = {
     "Phase shift (degrees)",
     "Фазовый сдвиг (градусы)",
     NULL
 };
 
 // Short rearranged versions of y_label and alty_label.
-static char *legend_text[][2] = {
+static const char *legend_texts[][2] = {
     { "Amplitude",          "Phase shift"               },
     { "Амплитуда", "Фазовый сдвиг" }
 };
 
-static char *title_label[] = {
+static const char *title_labels[] = {
     "Single Pole Low-Pass Filter",
     "Однополюсный Низко-Частотный Фильтр",
     NULL
 };
 
-static char *line_label[] = {
+static const char *line_labels[] = {
     "-20 dB/decade",
     "-20 dB/десяток",
     NULL
 };
 
-void plot1( int type, char *x_label, char *y_label, char *alty_label,
-            char * legend_text[], char *title_label, char *line_label );
+void plot1( int type, const char *x_label, const char *y_label,
+            const char *alty_label, const char * legend_text[],
+            const char *title_label, const char *line_label );
 
 //--------------------------------------------------------------------------
 // main
@@ -125,10 +126,10 @@ main( int argc, const char *argv[] )
 // Make log plots using two different styles.
 
     i = 0;
-    while ( x_label[i] != NULL )
+    while ( x_labels[i] != NULL )
     {
-        plot1( 0, x_label[i], y_label[i], alty_label[i],
-            legend_text[i], title_label[i], line_label[i] );
+        plot1( 0, x_labels[i], y_labels[i], alty_labels[i],
+            legend_texts[i], title_labels[i], line_labels[i] );
         i++;
     }
 
@@ -143,8 +144,8 @@ main( int argc, const char *argv[] )
 //--------------------------------------------------------------------------
 
 void
-plot1( int type, char *x_label, char *y_label, char *alty_label,
-       char * legend_text[], char *title_label, char *line_label )
+plot1( int type, const char *x_label, const char *y_label, const char *alty_label,
+       const char * legend_text[], const char *title_label, const char *line_label )
 {
     int          i;
     static PLFLT freql[101], ampl[101], phase[101];
@@ -154,10 +155,10 @@ plot1( int type, char *x_label, char *y_label, char *alty_label,
     PLINT        text_colors[2];
     PLINT        line_colors[2];
     PLINT        line_styles[2];
-    PLINT        line_widths[2];
+    PLFLT        line_widths[2];
     PLINT        symbol_numbers[2], symbol_colors[2];
     PLFLT        symbol_scales[2];
-    char         *symbols[2];
+    const char   *symbols[2];
     PLFLT        legend_width, legend_height;
 
 
@@ -224,7 +225,7 @@ plot1( int type, char *x_label, char *y_label, char *alty_label,
     text_colors[0] = 2;
     line_colors[0] = 2;
     line_styles[0] = 1;
-    line_widths[0] = 1;
+    line_widths[0] = 1.;
     // note from the above opt_array the first symbol (and box) indices
     // do not have to be specified
 
@@ -233,7 +234,7 @@ plot1( int type, char *x_label, char *y_label, char *alty_label,
     text_colors[1]    = 3;
     line_colors[1]    = 3;
     line_styles[1]    = 1;
-    line_widths[1]    = 1;
+    line_widths[1]    = 1.;
     symbol_colors[1]  = 3;
     symbol_scales[1]  = 1.;
     symbol_numbers[1] = 4;

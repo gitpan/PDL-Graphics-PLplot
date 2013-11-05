@@ -1,4 +1,4 @@
-// $Id: x04c.c 11717 2011-04-21 00:47:06Z airwin $
+// $Id: x04c.c 12319 2013-05-01 21:51:24Z airwin $
 //
 //      Log plot demo.
 //
@@ -52,7 +52,7 @@ plot1( int type )
     PLINT        text_colors[2];
     PLINT        line_colors[2];
     PLINT        line_styles[2];
-    PLINT        line_widths[2];
+    PLFLT        line_widths[2];
     PLINT        symbol_numbers[2], symbol_colors[2];
     PLFLT        symbol_scales[2];
     PLFLT        legend_width, legend_height;
@@ -123,7 +123,7 @@ plot1( int type )
     text[0]        = "Amplitude";
     line_colors[0] = 2;
     line_styles[0] = 1;
-    line_widths[0] = 1;
+    line_widths[0] = 1.;
     // note from the above opt_array the first symbol (and box) indices
     // do not have to be specified
 
@@ -133,7 +133,7 @@ plot1( int type )
     text[1]           = "Phase shift";
     line_colors[1]    = 3;
     line_styles[1]    = 1;
-    line_widths[1]    = 1;
+    line_widths[1]    = 1.;
     symbol_colors[1]  = 3;
     symbol_scales[1]  = 1.;
     symbol_numbers[1] = 4;

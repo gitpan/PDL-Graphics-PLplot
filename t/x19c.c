@@ -1,4 +1,4 @@
-// $Id: x19c.c 11289 2010-10-29 20:44:17Z airwin $
+// $Id: x19c.c 12532 2013-09-26 15:18:37Z andrewross $
 //
 //      Illustrates backdrop plotting of world, US maps.
 //      Contributed by Wesley Ebisuzaki.
@@ -6,8 +6,13 @@
 
 #include "plcdemos.h"
 
+void map_transform( PLFLT x, PLFLT y, PLFLT *xt, PLFLT *yt, PLPointer data );
+void mapform19( PLINT n, PLFLT *x, PLFLT *y );
+PLFLT normalize_longitude( PLFLT lon );
+void geolocation_labeler( PLINT axis, PLFLT value, char *label, PLINT length, PLPointer data );
+
 void
-map_transform( PLFLT x, PLFLT y, PLFLT *xt, PLFLT *yt, PLPointer data )
+map_transform( PLFLT x, PLFLT y, PLFLT *xt, PLFLT *yt, PLPointer PL_UNUSED( data ) )
 {
     double radius;
 
@@ -39,7 +44,8 @@ mapform19( PLINT n, PLFLT *x, PLFLT *y )
 
 // "Normalize" longitude values so that they always fall between -180.0 and
 // 180.0
-PLFLT normalize_longitude( PLFLT lon )
+PLFLT
+normalize_longitude( PLFLT lon )
 {
     PLFLT times;
     if ( lon >= -180.0 && lon <= 180.0 )
@@ -62,10 +68,10 @@ PLFLT normalize_longitude( PLFLT lon )
 
 // A custom axis labeling function for longitudes and latitudes.
 void
-geolocation_labeler( PLINT axis, PLFLT value, char *label, PLINT length, PLPointer data )
+geolocation_labeler( PLINT axis, PLFLT value, char *label, PLINT length, PLPointer PL_UNUSED( data ) )
 {
-    const char *direction_label;
-    PLFLT      label_val;
+    const char *direction_label = NULL;
+    PLFLT      label_val        = 0.0;
 
     if ( axis == PL_Y_AXIS )
     {
@@ -102,11 +108,11 @@ geolocation_labeler( PLINT axis, PLFLT value, char *label, PLINT length, PLPoint
     if ( axis == PL_Y_AXIS && value == 0.0 )
     {
         // A special case for the equator
-        snprintf( label, length, "%s", direction_label );
+        snprintf( label, (size_t) length, "%s", direction_label );
     }
     else
     {
-        snprintf( label, length, "%.0f%s", fabs( label_val ), direction_label );
+        snprintf( label, (size_t) length, "%.0f%s", fabs( label_val ), direction_label );
     }
 }
 
@@ -136,8 +142,8 @@ main( int argc, const char **argv )
 // Cartesian plots
 // Most of world
 
-    minx = 190;
-    maxx = 190 + 360;
+    minx = -170;
+    maxx = minx + 360;
 
     // Setup a custom latitude and longitude-based scaling function.
     plslabelfunc( geolocation_labeler, NULL );

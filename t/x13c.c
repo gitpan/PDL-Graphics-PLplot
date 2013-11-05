@@ -1,11 +1,11 @@
-// $Id: x13c.c 11289 2010-10-29 20:44:17Z airwin $
+// $Id: x13c.c 11968 2011-10-14 07:12:16Z andrewross $
 //
 //      Pie chart demo.
 //
 
 #include "plcdemos.h"
 
-static char *text[] =
+static const char *text[] =
 {
     "Maurice",
     "Geoffrey",

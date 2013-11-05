@@ -32,15 +32,7 @@ use Text::Wrap;
 
 $Text::Wrap::columns = 72;
 
-# Fundamental settings.  See @notes for more info.
-
-use constant ns => 20;      # Default number of shade levels
-use constant nx => 35;      # Default number of data points in x
-use constant ny => 46;	    # Default number of data points in y
-use constant exclude => 0;  # By default do not plot a page illustrating
-			    # exclusion.  API is probably going to change
-			    # anyway, and cannot be reproduced by any
-			    # front end other than the C one.
+my $colorbar = 1; # turn on or off color bar
 
 # polar plot data
 use constant PERIMETERPTS => 100;
@@ -100,11 +92,11 @@ my $cont_width = 0;
 
 # Parse and process command line arguments
 
-my ($exclude, $ns, $nx, $ny, $help);
-$exclude = exclude;
-$ns = ns;
-$nx = nx;
-$ny = ny;
+my $exclude = 0;
+my $ns = 20;
+my $nx = 35;
+my $ny = 46;
+my $help = '';
 
 GetOptions ("exclude" => \$exclude,
             "ns=i"    => \$ns,
@@ -188,6 +180,34 @@ plpsty (0);
 
 plshades ($z, -1., 1., -1., 1., $shedge, $fill_width,
           $cont_color, $cont_width, 1, 0, 0, 0);
+
+
+if ($colorbar) {
+
+        # Smaller text
+        plschr( 0.0, 0.75 );
+        # Small ticks on the vertical axis
+        plsmaj( 0.0, 0.5 );
+        plsmin( 0.0, 0.5 );
+
+        num_values[0] = $ns + 1; !!!here!!!
+        values[0]     = shedge;
+        plcolorbar( &colorbar_width, &colorbar_height,
+            PL_COLORBAR_SHADE | PL_COLORBAR_SHADE_LABEL, 0,
+            0.005, 0.0, 0.0375, 0.875, 0, 1, 1, 0.0, 0.0,
+            cont_color, cont_width,
+            n_labels, label_opts, labels,
+            n_axis_opts, axis_opts,
+            axis_ticks, axis_subticks,
+            num_values, (const PLFLT * const *) values );
+
+        # Reset text and tick sizes
+        plschr( 0.0, 1.0 );
+        plsmaj( 0.0, 1.0 );
+        plsmin( 0.0, 1.0 );
+    }
+
+
 
 plcol0 (1);
 plbox (0.0, 0, 0.0, 0, "bcnst", "bcnstv");

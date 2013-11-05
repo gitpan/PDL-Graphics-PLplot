@@ -1,4 +1,4 @@
-// $Id: x28c.c 11680 2011-03-27 17:57:51Z airwin $
+// $Id: x28c.c 12095 2011-12-03 08:56:15Z andrewross $
 //
 //      plmtex3, plptex3 demo.
 //
@@ -61,8 +61,8 @@ int main( int argc, const char *argv[] )
     PLFLT radius, pitch, xpos, ypos, zpos;
     // p1string must be exactly one character + the null termination
     // character.
-    char p1string[] = "O",
-    *pstring        = "The future of our civilization depends on software freedom.";
+    char       p1string[] = "O";
+    const char *pstring   = "The future of our civilization depends on software freedom.";
     // Allocate and define the minimal x, y, and z to insure 3D box
     x = (PLFLT *) calloc( XPTS, sizeof ( PLFLT ) );
     y = (PLFLT *) calloc( YPTS, sizeof ( PLFLT ) );
@@ -163,7 +163,7 @@ int main( int argc, const char *argv[] )
             0.0, "  revolution" );
     }
     // Draw minimal 3D grid to finish defining the 3D box.
-    plmesh( x, y, (const PLFLT **) z, XPTS, YPTS, DRAW_LINEXY );
+    plmesh( x, y, (const PLFLT * const *) z, XPTS, YPTS, DRAW_LINEXY );
 
     // Page 2: Demonstrate rotation of string around its axis.
     pladv( 0 );
@@ -240,7 +240,7 @@ int main( int argc, const char *argv[] )
             0.5, "rotation for z = z#dmin#u" );
     }
     // Draw minimal 3D grid to finish defining the 3D box.
-    plmesh( x, y, (const PLFLT **) z, XPTS, YPTS, DRAW_LINEXY );
+    plmesh( x, y, (const PLFLT * const *) z, XPTS, YPTS, DRAW_LINEXY );
 
     // Page 3: Demonstrate shear of string along its axis.
     // Work around xcairo and pngcairo (but not pscairo) problems for
@@ -321,7 +321,7 @@ int main( int argc, const char *argv[] )
             0.5, "shear for z = z#dmin#u" );
     }
     // Draw minimal 3D grid to finish defining the 3D box.
-    plmesh( x, y, (const PLFLT **) z, XPTS, YPTS, DRAW_LINEXY );
+    plmesh( x, y, (const PLFLT * const *) z, XPTS, YPTS, DRAW_LINEXY );
 
     // Page 4: Demonstrate drawing a string on a 3D path.
     pladv( 0 );
@@ -339,7 +339,7 @@ int main( int argc, const char *argv[] )
     // domega controls the spacing between the various characters of the
     // string and also the maximum value of omega for the given number
     // of characters in *pstring.
-    domega = 2. * M_PI / strlen( pstring );
+    domega = 2. * M_PI / (double) strlen( pstring );
     omega  = 0.;
     // 3D function is a helix of the given radius and pitch
     radius = 0.5;
@@ -372,7 +372,7 @@ int main( int argc, const char *argv[] )
         omega += domega;
     }
     // Draw minimal 3D grid to finish defining the 3D box.
-    plmesh( x, y, (const PLFLT **) z, XPTS, YPTS, DRAW_LINEXY );
+    plmesh( x, y, (const PLFLT * const *) z, XPTS, YPTS, DRAW_LINEXY );
 
     // Page 5: Demonstrate plmtex3 axis labelling capability
     pladv( 0 );
@@ -400,7 +400,7 @@ int main( int argc, const char *argv[] )
     plmtex3( "zs", -2.5, 0.5, 0.5, "Arbitrarily displaced" );
     plmtex3( "zs", -1.0, 0.5, 0.5, "secondary Z-axis label" );
     // Draw minimal 3D grid to finish defining the 3D box.
-    plmesh( x, y, (const PLFLT **) z, XPTS, YPTS, DRAW_LINEXY );
+    plmesh( x, y, (const PLFLT * const *) z, XPTS, YPTS, DRAW_LINEXY );
 
     // Clean up.
     free( (void *) x );

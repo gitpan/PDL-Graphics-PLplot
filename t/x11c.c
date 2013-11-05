@@ -1,4 +1,4 @@
-// $Id: x11c.c 11680 2011-03-27 17:57:51Z airwin $
+// $Id: x11c.c 12129 2012-01-14 23:19:10Z airwin $
 //
 //      Mesh plot demo.
 //
@@ -27,19 +27,19 @@
 #define YPTS      46            // Data points in y
 #define LEVELS    10
 
-static int   opt[] = { DRAW_LINEXY, DRAW_LINEXY };
+static int        opt[] = { DRAW_LINEXY, DRAW_LINEXY };
 
-static PLFLT alt[] = { 33.0, 17.0 };
-static PLFLT az[] = { 24.0, 115.0 };
+static PLFLT      alt[] = { 33.0, 17.0 };
+static PLFLT      az[] = { 24.0, 115.0 };
 
-static char  *title[4] =
+static const char *title[4] =
 {
     "#frPLplot Example 11 - Alt=33, Az=24, Opt=3",
     "#frPLplot Example 11 - Alt=17, Az=115, Opt=3",
 };
 
 static void
-cmap1_init()
+cmap1_init( void )
 {
     PLFLT i[2], h[2], l[2], s[2];
 
@@ -114,7 +114,7 @@ main( int argc, const char *argv[] )
         }
     }
 
-    plMinMax2dGrid( (const PLFLT **) z, XPTS, YPTS, &zmax, &zmin );
+    plMinMax2dGrid( (const PLFLT * const *) z, XPTS, YPTS, &zmax, &zmin );
     step = ( zmax - zmin ) / ( nlevel + 1 );
     for ( i = 0; i < nlevel; i++ )
         clevel[i] = zmin + step + step * i;
@@ -137,19 +137,19 @@ main( int argc, const char *argv[] )
 
             // wireframe plot
             if ( i == 0 )
-                plmesh( x, y, (const PLFLT **) z, XPTS, YPTS, opt[k] );
+                plmesh( x, y, (const PLFLT * const *) z, XPTS, YPTS, opt[k] );
 
             // magnitude colored wireframe plot
             else if ( i == 1 )
-                plmesh( x, y, (const PLFLT **) z, XPTS, YPTS, opt[k] | MAG_COLOR );
+                plmesh( x, y, (const PLFLT * const *) z, XPTS, YPTS, opt[k] | MAG_COLOR );
 
             // magnitude colored wireframe plot with sides
             else if ( i == 2 )
-                plot3d( x, y, (const PLFLT **) z, XPTS, YPTS, opt[k] | MAG_COLOR, 1 );
+                plot3d( x, y, (const PLFLT * const *) z, XPTS, YPTS, opt[k] | MAG_COLOR, 1 );
 
             // magnitude colored wireframe plot with base contour
             else if ( i == 3 )
-                plmeshc( x, y, (const PLFLT **) z, XPTS, YPTS, opt[k] | MAG_COLOR | BASE_CONT,
+                plmeshc( x, y, (const PLFLT * const *) z, XPTS, YPTS, opt[k] | MAG_COLOR | BASE_CONT,
                     clevel, nlevel );
 
             plcol0( 3 );
