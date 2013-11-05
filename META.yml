@@ -22,4 +22,4 @@ provides:
     file: plplot.pd
     version: 0.61
 requires: {}
-version: 0.65
+version: 0.66

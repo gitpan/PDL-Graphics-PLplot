@@ -122,5 +122,9 @@ Revision history for Perl extension PDL::Graphics::PLPLOT
 
 0.64 6/1/2012    Add GRIDMAP2 option to shadeplot, add test case for it.
 
+0.66 11/5/2013   Upgrade to work with plplot 5.9.10 release.
+
+
+
 
 
