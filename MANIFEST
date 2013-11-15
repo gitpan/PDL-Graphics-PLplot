@@ -24,7 +24,7 @@ t/x15.pl
 t/not_covered/x16.pl
 t/x17.pl
 t/x18.pl
-t/x19.pl
+t/not_covered/x19.pl
 t/x21.pl
 t/not_covered/x20.pl
 t/x22.pl
@@ -55,7 +55,7 @@ t/x15c.c
 t/not_covered/x16c.c
 t/x17c.c
 t/x18c.c
-t/x19c.c
+t/not_covered/x19c.c
 t/not_covered/x20c.c
 t/x21c.c
 t/x22c.c
